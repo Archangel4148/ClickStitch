@@ -1,0 +1,21 @@
+* text=auto
+
+*.cs text diff=csharp
+*.csproj text
+*.fsproj text
+*.vbproj text
+*.sln text merge=union
+*.props text
+*.targets text
+*.md text
+*.json text
+*.xml text
+*.yml text
+*.yaml text
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
