@@ -9,8 +9,20 @@ public static class MacroStore
 {
     public const string Extension = ".clickstitch.json";
 
-    public static string DefaultDirectory() =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ClickStitch", "Macros");
+    /// <summary>
+    /// The macros folder in Documents, so the files are easy to find.
+    /// Settings stay under Local AppData. If Documents is unavailable, the folder is under Local AppData instead.
+    /// </summary>
+    public static string DefaultDirectory()
+    {
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        if (string.IsNullOrEmpty(documents))
+        {
+            documents = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        }
+
+        return Path.Combine(documents, "ClickStitch");
+    }
 
     /// <summary>
     /// Writes <paramref name="document"/> into <paramref name="directory"/> and returns the full path.

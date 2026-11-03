@@ -1,6 +1,6 @@
 # Plugin SDK — Initial Design
 
-**Status:** The SDK, host, and sample plugin are implemented. The shell loads a plugin only after the trust warning is accepted and that plugin is enabled. Block descriptors are not registered.
+**Status:** The SDK, host, sample plugin, and plugin manager are implemented. The shell loads a plugin only after the trust warning is accepted and that plugin is enabled. The manager saves that choice for the next start and does not load a plugin in the current session. Block descriptors are not registered.
 
 ## Trust
 

@@ -3,9 +3,10 @@ namespace ClickStitch.Core.Tests;
 public sealed class MacroStoreTests
 {
     [Fact]
-    public void The_default_folder_is_under_local_application_data()
+    public void The_default_folder_is_ClickStitch_under_Documents()
     {
-        Assert.EndsWith(Path.Combine("ClickStitch", "Macros"), MacroStore.DefaultDirectory());
+        string documents = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        Assert.Equal(Path.Combine(documents, "ClickStitch"), MacroStore.DefaultDirectory());
     }
 
     [Fact]

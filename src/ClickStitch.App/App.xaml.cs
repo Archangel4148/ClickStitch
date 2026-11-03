@@ -15,19 +15,33 @@ public partial class App : Application
 
     public PluginHost PluginRuntime { get; private set; } = PluginHost.Load(PluginCatalog.Empty);
 
+    public PluginSettings Settings { get; private set; } = PluginSettings.Off;
+
+    public void SaveSettings(PluginSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        Settings = settings;
+        PluginSettingsStore.Write(PluginSettingsStore.DefaultPath, settings);
+        ShellTheme.Apply(this, settings.Appearance);
+    }
+
     protected override void OnStartup(StartupEventArgs e)
     {
         try
         {
             Plugins = PluginDiscovery.Discover(Path.Combine(AppContext.BaseDirectory, PluginDiscovery.DirectoryName));
-            PluginRuntime = PluginHost.LoadEnabled(Plugins, PluginSettingsStore.Read(PluginSettingsStore.DefaultPath));
+            PluginSettingsLoad loaded = PluginSettingsStore.Read(PluginSettingsStore.DefaultPath);
+            Settings = loaded.Settings;
+            PluginRuntime = PluginHost.LoadEnabled(Plugins, loaded);
         }
         catch (Exception)
         {
             Plugins = PluginCatalog.Empty;
+            Settings = PluginSettings.Off;
             PluginRuntime = PluginHost.Load(PluginCatalog.Empty);
         }
 
+        ShellTheme.Apply(this, Settings.Appearance);
         base.OnStartup(e);
     }
 

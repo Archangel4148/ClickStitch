@@ -12,6 +12,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Resource Include="..\..\assets\clickstitch_icon_rounded.png" Link="Assets\clickstitch_icon_rounded.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\ClickStitch.Core\ClickStitch.Core.csproj" />
     <ProjectReference Include="..\ClickStitch.Input\ClickStitch.Input.csproj" />
     <ProjectReference Include="..\ClickStitch.Plugins.Host\ClickStitch.Plugins.Host.csproj" />

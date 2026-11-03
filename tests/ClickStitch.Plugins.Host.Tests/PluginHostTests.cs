@@ -216,6 +216,71 @@ public sealed class PluginHostTests : IDisposable
         Assert.True(host.Execute("sample.ping", "{}", cancelled.Token).Cancelled);
     }
 
+    [Fact]
+    public void The_manager_lists_version_compatibility_and_the_next_start()
+    {
+        WritePlugin("alpha", "com.clickstitch.alpha", "1.0", "Alpha");
+        WritePlugin("old", "com.clickstitch.old", "2.0", "Alpha");
+        PluginCatalog catalog = PluginDiscovery.Discover(_root);
+        PluginSettings settings = PluginSettings.Off.Acknowledge().Enable("com.clickstitch.alpha");
+
+        PluginListing listing = Assert.Single(PluginManager.List(catalog, settings, ["com.clickstitch.alpha"]));
+        Assert.Equal("com.clickstitch.alpha", listing.Id);
+        Assert.Equal("1.0.0", listing.Version);
+        Assert.Equal("1.0", listing.ApiVersion);
+        Assert.True(listing.Compatible);
+        Assert.True(listing.Enabled);
+        Assert.True(listing.Loaded);
+        Assert.Equal("Loaded.", listing.State);
+
+        PluginListing waiting = Assert.Single(PluginManager.List(catalog, settings, []));
+        Assert.Equal("On. It loads the next time ClickStitch starts.", waiting.State);
+
+        File.WriteAllText(Path.Combine(_root, "untrusted.json"), """
+            {
+              "thirdPartyPluginsAcknowledged": false,
+              "enabledPluginIds": [ "com.clickstitch.alpha" ]
+            }
+            """);
+        PluginSettings untrusted = PluginSettingsStore.Read(Path.Combine(_root, "untrusted.json")).Settings;
+        PluginListing blocked = Assert.Single(PluginManager.List(catalog, untrusted, []));
+        Assert.Contains("warning", blocked.State, StringComparison.Ordinal);
+
+        Assert.Contains(catalog.Faults, fault => fault.Message.Contains("2.0", StringComparison.Ordinal));
+        IReadOnlyList<PluginFault> errors = PluginManager.Errors(catalog, catalog.Faults);
+        Assert.Equal(catalog.Faults.Count, errors.Count);
+    }
+
+    [Fact]
+    public void Appearance_is_saved_and_a_bad_value_is_ignored()
+    {
+        string path = Path.Combine(_root, "theme.json");
+        PluginSettingsStore.Write(path, PluginSettings.Off.Acknowledge().WithAppearance(AppAppearance.Dark));
+        PluginSettings loaded = PluginSettingsStore.Read(path).Settings;
+        Assert.Equal(AppAppearance.Dark, loaded.Appearance);
+        Assert.True(loaded.ThirdPartyPluginsAcknowledged);
+
+        File.WriteAllText(Path.Combine(_root, "plain.json"), """
+            {
+              "thirdPartyPluginsAcknowledged": false,
+              "enabledPluginIds": []
+            }
+            """);
+        Assert.Equal(AppAppearance.System, PluginSettingsStore.Read(Path.Combine(_root, "plain.json")).Settings.Appearance);
+
+        File.WriteAllText(Path.Combine(_root, "neon.json"), """
+            {
+              "thirdPartyPluginsAcknowledged": false,
+              "enabledPluginIds": [],
+              "appearance": "neon"
+            }
+            """);
+        PluginSettingsLoad neon = PluginSettingsStore.Read(Path.Combine(_root, "neon.json"));
+        Assert.False(neon.Settings.ThirdPartyPluginsAcknowledged);
+        Assert.Equal("appearance must be light, dark, or system.", neon.Fault!.Message);
+        Assert.Equal(AppAppearance.System, PluginSettings.Off.RevokeTrust().Appearance);
+    }
+
     private void WritePlugin(string folder, string id, string api, string type, bool copyAssembly = true)
     {
         string directory = Path.Combine(_root, folder);

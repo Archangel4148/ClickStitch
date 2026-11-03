@@ -74,31 +74,39 @@ Test with people unfamiliar with the project. Observe whether they can create, s
 
 ## Design system
 
-Phase 0 defines the visual system and applies the light theme to the foundation window. Dark theme tokens are specified so later screens can use them. The dark theme is not implemented.
+The shell uses the navy and violet from `assets/clickstitch_icon_rounded.png`. Light and dark are both applied. Text, muted labels, the accent, and Stop each stay readable against the surface behind them.
 
 Personality stays friendly, calm, and specific. Charm comes from spacing, type, and one accent. Gradients, glow, and heavy shadows are out.
 
 ### Color
 
-Light theme, used by the foundation window:
+Light theme:
 
 | Token | Hex | Use |
 |---|---|---|
-| Paper | `#F6F3EE` | Window background |
-| Ink | `#1C2430` | Text |
-| Thread | `#B4532A` | The single accent. A mark, a selection, a primary action. |
-| Stop | `#9E2B2B` | Emergency stop only, so stop is not the same color as the accent. |
+| Paper | `#F7F4FC` | Window background |
+| Ink | `#020718` | Text |
+| Thread | `#5E35C4` | The accent. A selected tab, a primary button, a problem line. |
+| Stop | `#A61E45` | Stop only, so stop is not the same color as the accent. |
+| Card | `#FFFFFF` | Grouped controls |
+| Muted | `#3C3554` | Secondary text |
+| Line | `#D5C8EA` | Borders |
 
-Ink on paper is the text pair. Thread and Stop are for marks and controls, with Ink or white text chosen per control so the label stays readable. The foundation window uses Thread as a vertical bar, not as text.
+Ink on paper, muted on paper, white on Thread, and white on Stop are each above 4.5:1.
 
-Dark theme, defined and not applied:
+Dark theme, applied when Settings chooses Dark or when Match Windows finds a dark app theme:
 
 | Token | Hex |
 |---|---|
-| Paper | `#1C2430` |
-| Ink | `#F6F3EE` |
-| Thread | `#E07A4C` |
-| Stop | `#F0B4B4` |
+| Paper | `#0E1324` |
+| Ink | `#F4F1FB` |
+| Thread | `#D2B4FF` |
+| Stop | `#FFB4C6` |
+| Card | `#1A2238` |
+| Muted | `#C9C0DC` |
+| Line | `#3E4666` |
+
+On the dark theme, Thread and Stop are light fills. Text drawn on those fills is `#1A1030` and `#2A0E18`, not white. Ink and muted stay light against Paper and Card. Those pairs are each above 4.5:1.
 
 High contrast uses the system window, window-text, and highlight colors. The foundation window does this when Windows high contrast is on.
 
@@ -132,7 +140,7 @@ Body text is at least 16px. The user can scale Windows text, and layouts have to
 
 The spacing step is 4px: 8, 12, 16, 24, 32, 48. Cards use a 12px corner radius. Controls use 8px. The default control height is 36px. A primary or stop control is at least 44px tall. Icons sit on a 20px grid, with a stroke near 1.75px and round caps.
 
-The application mark is a single stitch: two short joined diagonal strokes in Thread on Paper. An icon file is not in the repository yet.
+The application mark is `assets/clickstitch_icon_rounded.png`. The window shows that icon in its own title bar and does not use the system caption.
 
 ### Motion
 
@@ -149,4 +157,4 @@ State changes use about 120ms. Emergency stop, press feedback, and execution-sta
 
 ### Foundation window
 
-The current window shows the product name, "Desktop macros for Windows 11.", a sentence that this build is the foundation, and the macro format version. It has no buttons that look like they run a macro.
+The shell opens on Click. That page sets a point, a gap, and a repeat, then starts. It sends real input. Macros, Record, Plugins, and Settings are the other tabs. Inside Macros, Library, Editor, and Run stay available. The editor does not send input. Record and Run do. Stop stays visible.

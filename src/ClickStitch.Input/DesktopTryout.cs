@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using ClickStitch.Core;
@@ -18,7 +19,14 @@ public sealed class DesktopTryout : IDisposable
     private readonly StringBuilder _log = new();
     private RecordingCapture? _capture;
     private string? _recordingJson;
+    private Stopwatch? _runClock;
     private bool _disposed;
+
+    public string RunningName { get; private set; } = "";
+
+    public string CurrentStep { get; private set; } = "";
+
+    public string ElapsedText { get; private set; } = "0:00";
 
     private DesktopTryout(ExecutionWorker worker, VirtualScreen screen, IRecordingHook hook)
     {
@@ -149,7 +157,22 @@ public sealed class DesktopTryout : IDisposable
             return;
         }
 
-        Begin(_recordingJson);
+        Begin(_recordingJson, "Recording");
+    }
+
+    /// <summary>Runs a saved macro on the worker. This sends real input when the worker is the Windows one.</summary>
+    public void PlayMacro(string name, string json)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        ArgumentNullException.ThrowIfNull(json);
+        if (IsRecording)
+        {
+            Append("Stop recording before playback. Playback sends real input.");
+            return;
+        }
+
+        Begin(json, name);
     }
 
     public void Pause()
@@ -199,6 +222,19 @@ public sealed class DesktopTryout : IDisposable
         {
             foreach (WorkerEvent item in events)
             {
+                if (item.Kind == WorkerEventKind.MacroActionStarted && item.ActionId is not null)
+                {
+                    CurrentStep = item.ActionId;
+                }
+                else if (item.Kind == WorkerEventKind.MacroFailed && item.ActionId is not null)
+                {
+                    CurrentStep = item.ActionId;
+                }
+                else if (item.Kind == WorkerEventKind.MacroFinished)
+                {
+                    CurrentStep = "Finished";
+                }
+
                 if (item.ActionId is not null)
                 {
                     _log.Append(item.Kind).Append(' ').Append(item.ActionId);
@@ -210,6 +246,8 @@ public sealed class DesktopTryout : IDisposable
                     _log.AppendLine();
                 }
             }
+
+            UpdateClock();
 
             string text = _log.ToString();
             _log.Clear();
@@ -263,14 +301,14 @@ public sealed class DesktopTryout : IDisposable
             }
             """);
 
-    private void Begin(string json)
+    private bool Begin(string json, string? name = null)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         _pause.Resume();
         if (_worker.State is WorkerState.Running or WorkerState.Paused or WorkerState.Stopping)
         {
             Append("A run is already going. Press Stop first.");
-            return;
+            return false;
         }
 
         try
@@ -285,12 +323,39 @@ public sealed class DesktopTryout : IDisposable
             if (!started)
             {
                 Append(prepared.Issues.Count == 0 ? "The document was not accepted." : prepared.Issues[0].Message);
+                return false;
             }
+
+            RunningName = name ?? "Tryout";
+            CurrentStep = "Starting";
+            _runClock = Stopwatch.StartNew();
+            UpdateClock();
+            return true;
         }
         catch (Exception error)
         {
             Append(error.Message);
+            return false;
         }
+    }
+
+    private void UpdateClock()
+    {
+        if (_runClock is null)
+        {
+            ElapsedText = "0:00";
+            return;
+        }
+
+        if (_worker.State is not (WorkerState.Running or WorkerState.Paused or WorkerState.Stopping))
+        {
+            _runClock.Stop();
+        }
+
+        TimeSpan elapsed = _runClock.Elapsed;
+        ElapsedText = elapsed.TotalHours >= 1
+            ? $"{(int)elapsed.TotalHours}:{elapsed.Minutes:00}:{elapsed.Seconds:00}"
+            : $"{elapsed.Minutes}:{elapsed.Seconds:00}";
     }
 
     private void Append(string line)

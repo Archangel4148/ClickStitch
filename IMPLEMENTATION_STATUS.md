@@ -1,9 +1,9 @@
 # Implementation Status — ClickStitch
 
-**Project status:** Phase 4 awaiting review  
-**Current authorized phase:** Phase 4 — Plugin SDK and Host  
-**Current authorized milestone:** Phase 4 complete, awaiting review  
-**Human approval to proceed:** Milestones 4.1–4.5 were approved when the rest of Phase 4 was authorized. Phase 5 is not started.
+**Project status:** Phase 5 in progress  
+**Current authorized phase:** Phase 5 — Application UI and User Experience  
+**Current authorized milestone:** Phase 5.5, plugin manager, plus a shell layout pass, awaiting review  
+**Human approval to proceed:** Phases 5.3 and 5.4 were approved when milestone 5.5 was authorized. The visual editor is not started.
 
 ## Phase status
 
@@ -13,8 +13,8 @@
 | 1 — Core Windows Input Engine | Approved |
 | 2 — Macro Execution Engine | Approved |
 | 3 — Macro Recording | Approved |
-| 4 — Plugin SDK and Host | Awaiting review |
-| 5 — Application UI and UX | Not authorized |
+| 4 — Plugin SDK and Host | Approved |
+| 5 — Application UI and UX | In progress. Milestone 5.5 is awaiting review. |
 | 6 — Hardening and Distribution | Not authorized |
 | 7 — Plugins | Not authorized |
 
@@ -57,11 +57,16 @@ None from Phase 0.
 - Phase 3 — Conversion, save/load, and the record/playback tryout. Approved when Phase 4 was authorized.
 - Phase 4.1 — Plugin manifest validation. Approved when milestones 4.2–4.5 were authorized.
 - Phases 4.2–4.5 — Discovery, API checks, load and shutdown, and action registration. Approved when the rest of Phase 4 was authorized.
+- Phase 4 — Events, enable and disable, action execution, and the sample plugin. Approved when Phase 5 was authorized.
+- Phase 5.1 — Application shell, navigation, theme, and settings foundation. Approved when milestone 5.2 was authorized.
+- Phase 5.2 — List editor. Approved when milestones 5.3 and 5.4 were authorized.
+- Phases 5.3 and 5.4 — Library and run view. Approved when milestone 5.5 was authorized.
 
 ## Outstanding issues
 
 - No application icon file yet.
-- The dark theme is specified and not applied.
+- The visual editor and Mini Mode are not built yet.
+- Opening a macro and saving it again keeps the actions and drops extra document fields the editor does not show, such as timestamps.
 - High contrast and a non-default DPI were not exercised in CS-M-001.
 - ARM64 was not tested.
 
@@ -73,13 +78,13 @@ Release build and Debug build of `ClickStitch.sln` succeeded with 0 warnings and
 dotnet test ClickStitch.sln -c Release --settings tests.runsettings
 ```
 
-Passed: 235. Failed: 0. Skipped: 0.  
-`ClickStitch.Core.Tests.dll`: 64 passed in 102 ms.  
-`ClickStitch.Input.Tests.dll`: 154 passed in 858 ms.  
-`ClickStitch.Plugins.Sdk.Tests.dll`: 6 passed in 20 ms.  
-`ClickStitch.Plugins.Host.Tests.dll`: 10 passed in 723 ms.  
-`ClickStitch.Performance.Tests.dll`: 1 passed in 4 ms. That test does not submit input. The tryout window is not opened by this run.  
-Release, 2 November 2026. The default run does not call `SendInput`, does not register a usable global hotkey, and does not install a low-level hook. The host tests load the probe and the sample plugin from a temporary folder. The save/load test uses a temporary folder. The record button is covered with a scripted hook.
+Passed: 251. Failed: 0. Skipped: 0.  
+`ClickStitch.Core.Tests.dll`: 77 passed in 78 ms.  
+`ClickStitch.Input.Tests.dll`: 155 passed in 828 ms.  
+`ClickStitch.Plugins.Sdk.Tests.dll`: 6 passed in 81 ms.  
+`ClickStitch.Plugins.Host.Tests.dll`: 12 passed in 547 ms.  
+`ClickStitch.Performance.Tests.dll`: 1 passed in 92 ms. That test does not submit input. The tryout window is not opened by this run.  
+Release, 2 November 2026. The default run does not call `SendInput`, does not register a usable global hotkey, and does not install a low-level hook. The host tests load the probe and the sample plugin from a temporary folder. The save/load test uses a temporary folder. The record button is covered with a scripted hook. The library tests use a temporary folder. The playback test uses the capturing stand-in. The plugin manager test discovers a temporary folder and does not load those assemblies.
 
 `make bench` was run the same evening on the Ryzen 7 7800X3D, Windows 11 build 26200.9711, .NET 10.0.14, Release. The product wait is hybrid. The table is in `docs/TESTING.md`.
 
@@ -122,3 +127,8 @@ None. The foundation targets .NET 10, which is the current long-term support rel
 - Phase 3 approved. Phase 4 authorized. Milestone 4.1 adds `ClickStitch.Plugins.Sdk`. It validates `clickstitch-plugin.json` and reports a duplicate id. It does not discover a folder or load an assembly.
 - Milestones 4.2–4.5 add discovery, the API check on that catalog, in-process load and shutdown, and action registration during `Initialize`. The shell discovers a Plugins folder and does not load it. The probe is a test plugin, not the product sample.
 - Phase 4 closes with event subscription, enable and disable behind the trust warning, action execution, failure reporting, and `samples/ClickStitch.SamplePlugin`. A plugin exception is recorded. The host asks the engine to release inputs it still owns. Startup still opens the window.
+- Phase 4 approved. Phase 5.1 adds the shell: Home, Tryout, and Settings. Appearance is light, dark, or match Windows, and it is saved. High contrast still uses the system colors. Stop stays at the bottom of the window.
+- Phase 5.1 approved. Phase 5.2 adds the list editor. It builds a format-1 document from the eight built-in actions, explains invalid fields, undoes the last 50 edits, and saves through `MacroStore`. It does not run the macro.
+- Phase 5.2 approved. Phases 5.3 and 5.4 add the library and the run view. Macros are stored in Documents\ClickStitch. Run plays the open macro on the existing worker. A saved click is covered with the capturing stand-in.
+- Phases 5.3 and 5.4 approved. Phase 5.5 adds the plugin manager. It lists installed plugins, version, compatibility, and errors, and it saves enablement for the next start. It does not load a plugin during the session.
+- The shell drops the system title bar. Click is the first page. Macros, Record, Plugins, and Settings are tabs. Colors come from the app icon. No new click behavior was added.

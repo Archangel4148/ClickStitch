@@ -69,7 +69,7 @@ make run
 
 That runs `dotnet run --project src/ClickStitch.App -c Release`.
 
-The window is titled ClickStitch. The tryout can move the pointer, click, hold a key, repeat a click, record the desktop, and play that recording back. Pause, Resume, and Stop are on the window. Pause holds the next action of a playback. Record keeps buttons, keys, and the wheel, and pointer movement when the box is checked. Clicks on the tryout window are left out when recording stops. Play sends that recording as real input. The take stays in memory. The shell does not write settings or a macro file. Closing the window stops the run, uninstalls the hook, shuts plugins down, and exits the process. Startup looks for a `Plugins` folder beside the executable and loads only plugins enabled in settings after the trust warning. A missing folder, a bad settings file, or a plugin that fails to start still opens the window. The first plugin faults are written into the tryout log.
+The window is titled ClickStitch and draws its own title bar. Click is the first page: a point, a gap, a repeat, Start, and a key hold. Those buttons send real input. Macros opens Library, Editor, and Run. New macro opens the list editor. That page adds the eight built-in actions, including inside a repeat, and it can undo, redo, and save. It does not move the pointer or press keys. Save writes a file under `%USERPROFILE%\Documents\ClickStitch\`. Library lists that folder and can rename, duplicate, delete, import, and export. Run plays the open macro and sends real input. Record keeps clicks, keys, and the wheel, and pointer movement when the box is checked. Play sends that recording as real input. The take stays in memory. Plugins lists the folder beside the executable, the trust warning, each installed plugin, and any discovery or load problem. A checkbox stays off until the warning is accepted, and a change waits until the next start. Closing with unsaved edits asks before discarding them. Stop stays at the bottom of the window on every page. Pause holds the next action of a playback. Settings can save appearance and the plugin warning. Changing those writes `%LOCALAPPDATA%\ClickStitch\settings.json`. Closing the window stops the run, uninstalls the hook, shuts plugins down, and exits the process. Startup looks for a `Plugins` folder beside the executable and loads only plugins enabled in settings after the trust warning. A missing folder, a bad settings file, or a plugin that fails to start still opens the window. The first plugin faults are written into the record log and on the Plugins tab.
 
 ## Release build
 
@@ -77,10 +77,8 @@ The Release command above is the release build for this phase. Publishing a self
 
 ## Configuration and macros
 
-Planned locations, not created by this build:
-
-- `%LOCALAPPDATA%\ClickStitch\settings.json`
-- `%LOCALAPPDATA%\ClickStitch\Macros\`
+- `%LOCALAPPDATA%\ClickStitch\settings.json` is written when appearance or the plugin warning changes.
+- `%USERPROFILE%\Documents\ClickStitch\` receives a file when the editor saves. The shell creates that folder on startup.
 
 ## Plugins
 

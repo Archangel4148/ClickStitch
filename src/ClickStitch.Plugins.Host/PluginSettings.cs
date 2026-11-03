@@ -4,22 +4,42 @@ using System.Text.Json.Nodes;
 
 namespace ClickStitch.Plugins;
 
-/// <summary>Which plugins may load. Enabling one requires the trust warning to have been accepted.</summary>
+/// <summary>How the shell paints. System follows the Windows app theme.</summary>
+public enum AppAppearance
+{
+    System,
+    Light,
+    Dark,
+}
+
+/// <summary>Which plugins may load, and how the shell looks. Enabling a plugin requires the trust warning.</summary>
 public sealed class PluginSettings
 {
-    public static PluginSettings Off { get; } = new(false, []);
+    public static PluginSettings Off { get; } = new(false, [], AppAppearance.System);
 
-    private PluginSettings(bool thirdPartyPluginsAcknowledged, IReadOnlyList<string> enabledIds)
+    private PluginSettings(bool thirdPartyPluginsAcknowledged, IReadOnlyList<string> enabledIds, AppAppearance appearance)
     {
+        if (!Enum.IsDefined(appearance))
+        {
+            throw new ArgumentOutOfRangeException(nameof(appearance));
+        }
+
         ThirdPartyPluginsAcknowledged = thirdPartyPluginsAcknowledged;
         EnabledIds = enabledIds;
+        Appearance = appearance;
     }
 
     public bool ThirdPartyPluginsAcknowledged { get; }
 
     public IReadOnlyList<string> EnabledIds { get; }
 
-    public PluginSettings Acknowledge() => new(true, EnabledIds);
+    public AppAppearance Appearance { get; }
+
+    public PluginSettings Acknowledge() => new(true, EnabledIds, Appearance);
+
+    public PluginSettings RevokeTrust() => new(false, EnabledIds, Appearance);
+
+    public PluginSettings WithAppearance(AppAppearance appearance) => new(ThirdPartyPluginsAcknowledged, EnabledIds, appearance);
 
     public PluginSettings Enable(string pluginId)
     {
@@ -39,7 +59,7 @@ public sealed class PluginSettings
         }
 
         var ids = new List<string>(EnabledIds) { pluginId };
-        return new PluginSettings(true, ids);
+        return new PluginSettings(true, ids, Appearance);
     }
 
     public PluginSettings Disable(string pluginId)
@@ -50,11 +70,11 @@ public sealed class PluginSettings
             return this;
         }
 
-        return new PluginSettings(ThirdPartyPluginsAcknowledged, EnabledIds.Where(id => id != pluginId).ToArray());
+        return new PluginSettings(ThirdPartyPluginsAcknowledged, EnabledIds.Where(id => id != pluginId).ToArray(), Appearance);
     }
 
-    internal static PluginSettings FromFile(bool acknowledged, IReadOnlyList<string> enabledIds) =>
-        new(acknowledged, enabledIds);
+    internal static PluginSettings FromFile(bool acknowledged, IReadOnlyList<string> enabledIds, AppAppearance appearance) =>
+        new(acknowledged, enabledIds, appearance);
 }
 
 /// <summary>A settings read. A fault means the file was ignored and plugins stay off.</summary>
@@ -127,6 +147,7 @@ public static class PluginSettingsStore
         {
             writer.WriteStartObject();
             writer.WriteBoolean("thirdPartyPluginsAcknowledged", settings.ThirdPartyPluginsAcknowledged);
+            writer.WriteString("appearance", AppearanceName(settings.Appearance));
             writer.WriteStartArray("enabledPluginIds");
             foreach (string id in settings.EnabledIds)
             {
@@ -159,7 +180,7 @@ public static class PluginSettingsStore
 
         foreach (string name in document.Select(member => member.Key))
         {
-            if (name is not "thirdPartyPluginsAcknowledged" and not "enabledPluginIds")
+            if (name is not "thirdPartyPluginsAcknowledged" and not "enabledPluginIds" and not "appearance")
             {
                 return Ignored("Unknown settings member '" + name + "'.");
             }
@@ -191,7 +212,44 @@ public static class PluginSettingsStore
             enabled.Add(id);
         }
 
-        return new PluginSettingsLoad(PluginSettings.FromFile(acknowledged, enabled), null);
+        AppAppearance appearance = AppAppearance.System;
+        if (document.ContainsKey("appearance"))
+        {
+            if (document["appearance"] is not JsonValue appearanceValue
+                || !appearanceValue.TryGetValue(out string? appearanceText)
+                || !TryAppearance(appearanceText, out appearance))
+            {
+                return Ignored("appearance must be light, dark, or system.");
+            }
+        }
+
+        return new PluginSettingsLoad(PluginSettings.FromFile(acknowledged, enabled, appearance), null);
+    }
+
+    private static string AppearanceName(AppAppearance appearance) => appearance switch
+    {
+        AppAppearance.Light => "light",
+        AppAppearance.Dark => "dark",
+        _ => "system",
+    };
+
+    private static bool TryAppearance(string? text, out AppAppearance appearance)
+    {
+        switch (text)
+        {
+            case "light":
+                appearance = AppAppearance.Light;
+                return true;
+            case "dark":
+                appearance = AppAppearance.Dark;
+                return true;
+            case "system":
+                appearance = AppAppearance.System;
+                return true;
+            default:
+                appearance = AppAppearance.System;
+                return false;
+        }
     }
 
     private static PluginSettingsLoad Ignored(string message) =>

@@ -3,7 +3,7 @@
 **Status:** Approved with Phase 0. Phase 1 has not started.  
 **This document does not authorize implementing Phase 1 until that phase is explicitly started.**
 
-The foundation solution builds a WPF shell, a UI-free core library, the input engine, a plugin host, and a sample plugin. The shell loads a plugin only after the trust warning is accepted and that plugin is enabled. The editor is specified here and is not implemented.
+The foundation solution builds a WPF shell, a UI-free core library, the input engine, a plugin host, and a sample plugin. The shell loads a plugin only after the trust warning is accepted and that plugin is enabled. The list editor edits a format-1 document and does not run it. The visual editor is specified here and is not implemented.
 
 ## 1. Decision record
 
@@ -38,7 +38,7 @@ Projects that exist now:
 
 | Project | Responsibility |
 |---|---|
-| `ClickStitch.App` | WPF shell. Opens one window. References Core, Input for the tryout, and the plugin host. Startup loads enabled plugins and still opens when a plugin fails. |
+| `ClickStitch.App` | WPF shell with its own title bar. Click is the first page. Macros, Record, Plugins, and Settings are tabs. References Core, Input for Click, Record, and Run, and the plugin host. Startup loads enabled plugins and still opens when a plugin fails. The Plugins tab lists them and does not load one during the session. The editor does not reference the input engine. |
 | `ClickStitch.Core` | Shared contracts with no UI and no native calls. References no ClickStitch project. |
 | `ClickStitch.Input` | `SendInput` interop, ownership, and the monotonic wait. References no ClickStitch project. |
 | `ClickStitch.Core.Tests` | xUnit tests for Core. |
@@ -294,7 +294,7 @@ After the recording has stopped, `Simplify` builds a shorter copy. A move closer
 
 `ToDocument` writes a format-1 macro from the shortened copy when one exists, and otherwise from the raw list. A move becomes `mouse.move` in virtual-desktop pixels. A button down immediately followed by the same button's up becomes one `mouse.click` at the cursor, so the move before it is what places the pointer. Anything between that down and up becomes `mouse.hold`. Wheel units add up until they make a notch of 120, and a notch count past 100 is split. Keys become `keyboard.key`. Shift, Control, Alt, and the Windows keys can be left out. Gaps between samples become `wait` actions, from the monotonic clock, split at one hour. A release with no recorded press is left out. The raw list stays in memory, so the copy is not a second file format.
 
-`MacroStore` writes that document as `.clickstitch.json`. The file name is a slug of the name, a hyphen, and the macro id. Saving the same id again removes the older file in that folder. The default folder is `%LOCALAPPDATA%\ClickStitch\Macros`. The tryout window can record and play one take. It keeps that take in memory and does not write a file. Clicks and movement on the tryout window itself are left out when recording stops. The default tests drive a scripted hook and do not call `SetWindowsHookEx`. Replay goes through the existing runner.
+`MacroStore` writes that document as `.clickstitch.json`. The file name is a slug of the name, a hyphen, and the macro id. Saving the same id again removes the older file in that folder. The default folder is `%USERPROFILE%\Documents\ClickStitch`. The tryout window can record and play one take. It keeps that take in memory and does not write a file. Clicks and movement on the tryout window itself are left out when recording stops. The default tests drive a scripted hook and do not call `SetWindowsHookEx`. Replay goes through the existing runner.
 
 ## 10. Timing measurement
 
@@ -323,7 +323,7 @@ No timing measurement was taken in Phase 0. The first baseline is in `docs/TESTI
 
 No logging package is referenced. The proposed logger is `Microsoft.Extensions.Logging`, added when a sink is added. Milestone 1.7 diagnostics are the shutdown report and the worker progress queue, which holds 1000 records. When that queue is full, the oldest record is dropped, a drop count increases, and the worker does not wait. Shutdown copies that queue into the report. It does not flush a file.
 
-Configuration will live in `%LOCALAPPDATA%\ClickStitch\settings.json`. Macros live in `%LOCALAPPDATA%\ClickStitch\Macros\`, one `.clickstitch.json` file each. The macro `id` is the identity. The file name is a slug of the name plus the id, so two names can coexist. `MacroStore.Save` creates the folder it is given. The shell does not call it. A corrupt settings file is renamed aside and replaced with defaults, and the app still opens and explains that. This build does not create the settings file.
+Configuration will live in `%LOCALAPPDATA%\ClickStitch\settings.json`. Macros live in `%USERPROFILE%\Documents\ClickStitch\`, one `.clickstitch.json` file each. The macro `id` is the identity. The file name is a slug of the name plus the id, so two names can coexist. `MacroStore.Save` creates the folder it is given. The editor Save button calls it, and nothing is written until then. A corrupt settings file is renamed aside and replaced with defaults, and the app still opens and explains that. This build does not create the settings file.
 
 Errors are reported at the subsystem boundary with a plain-language message and a technical detail the user can open. Empty catch blocks are not used.
 

@@ -23,7 +23,7 @@
 | `ClickStitch.Core.Tests` | Yes. Format version, the document reader, the execution contract, the runner, repeats, pause, progress, validation before a run, the recording lifecycle, and macro file save/load. | Phase 0 through Phase 3 |
 | `ClickStitch.Input.Tests` | Yes. Layout, submission policy, coordinate math, primitives, ownership, timing, the execution worker, global hotkeys, shutdown, the macro executor, macro stop, run diagnostics, capture through a scripted hook, sampling, simplification, and conversion to a macro that replays through the runner. No desktop injection, no usable global chord, and no low-level hook. | Phase 1.1 through Phase 3 |
 | `ClickStitch.Plugins.Sdk.Tests` | Yes. Manifest fields, API compatibility, duplicate ids, and the 64 KiB cap. JSON text only. No assembly is loaded. | Phase 4.1 |
-| `ClickStitch.Plugins.Host.Tests` | Yes. Discovery, load, shutdown, events, enablement, action failure, and the sample plugin. They load plugin assemblies and do not touch the desktop. | Phase 4 |
+| `ClickStitch.Plugins.Host.Tests` | Yes. Discovery, load, shutdown, events, enablement, action failure, the sample plugin, and the plugin manager list. They load plugin assemblies and do not touch the desktop. The manager test does not load the assemblies it lists. | Phase 4 and 5.5 |
 | `ClickStitch.Performance.Tests` | Only its opt-in guard. The desktop benchmark is `Category=Performance` and is excluded. | Phase 1 |
 | `ClickStitch.Bench` | No. `make bench` runs it directly. | Phase 1 |
 | Manual input tests | No. `make manual` runs `Category=Manual` and sets `CLICKSTITCH_MANUAL_INPUT=1`. | Phase 1 |
@@ -228,6 +228,58 @@ Result on 2 November 2026: **235 passed, 0 failed, 0 skipped.**
 - `ClickStitch.Performance.Tests.dll`: 1 passed, duration 4 ms. This test does not submit input.
 
 A failed action is returned and does not throw. The release callback runs, and the next action still runs. One event handler that throws does not stop the next handler. One shutdown that throws does not stop the plugins shut down after it. A plugin stays unloaded until the trust warning is accepted and its id is enabled. A broken settings file leaves plugins off. The sample plugin's `sample.ping` action reports `Sample action ran.` A held F13 on the tryout stand-in is released without calling the real `SendInput`. These tests do not register a hotkey or install a hook.
+
+## Phase 5.5 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings`
+Result on 2 November 2026: **251 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 77 passed, duration 78 ms.
+- `ClickStitch.Input.Tests.dll`: 155 passed, duration 828 ms.
+- `ClickStitch.Plugins.Sdk.Tests.dll`: 6 passed, duration 81 ms.
+- `ClickStitch.Plugins.Host.Tests.dll`: 12 passed, duration 547 ms.
+- `ClickStitch.Performance.Tests.dll`: 1 passed, duration 92 ms. This test does not submit input.
+
+The manager test discovers a compatible plugin and one whose API is 2.0. It checks Loaded, the next-start sentence, the warning sentence, and that a fault listed twice is shown once. Discovery does not load those assemblies. The shell is not opened by this command.
+
+## Phase 5.3 and 5.4 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings`
+Result on 2 November 2026: **250 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 77 passed, duration 92 ms.
+- `ClickStitch.Input.Tests.dll`: 155 passed, duration 872 ms.
+- `ClickStitch.Plugins.Sdk.Tests.dll`: 6 passed, duration 24 ms.
+- `ClickStitch.Plugins.Host.Tests.dll`: 11 passed, duration 576 ms.
+- `ClickStitch.Performance.Tests.dll`: 1 passed, duration 5 ms. This test does not submit input.
+
+The library tests use a temporary folder. They rename, duplicate, delete, import, and export without touching Documents. The playback test runs one cursor click through the capturing stand-in and does not call `SendInput`. The shell is not opened by this command.
+
+## Phase 5.2 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings`
+Result on 2 November 2026: **246 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 74 passed, duration 56 ms.
+- `ClickStitch.Input.Tests.dll`: 154 passed, duration 869 ms.
+- `ClickStitch.Plugins.Sdk.Tests.dll`: 6 passed, duration 28 ms.
+- `ClickStitch.Plugins.Host.Tests.dll`: 11 passed, duration 574 ms.
+- `ClickStitch.Performance.Tests.dll`: 1 passed, duration 4 ms. This test does not submit input.
+
+The new tests build a list, reject a wait that is not a number, undo it, duplicate a repeat, reorder siblings, and save a move to a temporary folder. They do not call `SendInput`. The shell is not opened by this command.
+
+## Phase 5.1 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings`  
+Result on 2 November 2026: **236 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 64 passed, duration 49 ms.
+- `ClickStitch.Input.Tests.dll`: 154 passed, duration 895 ms.
+- `ClickStitch.Plugins.Sdk.Tests.dll`: 6 passed, duration 85 ms.
+- `ClickStitch.Plugins.Host.Tests.dll`: 11 passed, duration 606 ms.
+- `ClickStitch.Performance.Tests.dll`: 1 passed, duration 98 ms. This test does not submit input.
+
+Appearance `dark` is saved and read back. A settings file with no appearance value uses `system`. The value `neon` is rejected and plugins stay off. The shell itself is not opened by this command.
 
 ## Phase 1.1 automated result
 

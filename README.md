@@ -34,7 +34,7 @@ A first-run experience should include a sample macro and a clear explanation of 
 
 ## Status
 
-**Phase 4 is awaiting review.** Trusted plugins can be enabled, loaded, and shut down. A plugin failure is recorded and does not close the app. The sample plugin is `samples/ClickStitch.SamplePlugin`. See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
+**Phases 5.3 and 5.4 are approved. Phase 5.5 and a shell layout pass are awaiting review.** Click is the first page. Macros, recording, plugins, and settings are tabs. See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
 Update this section as phases are approved and finished. The authoritative record is [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
@@ -44,8 +44,8 @@ Update this section as phases are approved and finished. The authoritative recor
 | 1 | Windows input engine | Approved |
 | 2 | Macro execution | Approved |
 | 3 | Macro recording | Approved |
-| 4 | Plugin SDK and host | Awaiting review |
-| 5 | Application UI | Not authorized |
+| 4 | Plugin SDK and host | Approved |
+| 5 | Application UI | In progress. The library and run view are awaiting review. |
 | 6 | Hardening and distribution | Not authorized |
 | 7 | Plugins | Not authorized |
 

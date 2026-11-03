@@ -80,6 +80,40 @@ public sealed class DesktopTryoutTests
         Assert.Equal(0, hook.Installs);
     }
 
+    [Fact]
+    public void PlayMacro_runs_a_saved_click_and_refuses_a_bad_document()
+    {
+        var native = new CapturingNative();
+        using var tryout = DesktopTryout.Create(
+            new ExecutionWorker(new InputStateManager(new SendInputBatch(native)), new DeadlineWait(WaitStrategy.HighResolutionTimer)),
+            new VirtualScreen(0, 0, 1920, 1080),
+            new ScriptedHook());
+
+        tryout.PlayMacro("Door", "{");
+        Assert.Equal(0, native.Calls);
+        Assert.Contains("JSON", tryout.TakeLog(), StringComparison.Ordinal);
+        Assert.Equal("", tryout.RunningName);
+
+        tryout.PlayMacro(
+            "Door",
+            """
+            {
+              "formatVersion": 1,
+              "id": "door",
+              "name": "Door",
+              "actions": [ { "id": "click", "type": "mouse.click", "button": "left", "coordinateMode": "cursor" } ]
+            }
+            """);
+
+        Assert.True(SpinWait.SpinUntil(() => tryout.State == WorkerState.Stopped.ToString(), TimeSpan.FromSeconds(2)));
+        Assert.True(native.Calls > 0);
+        Assert.Equal("Door", tryout.RunningName);
+        string log = tryout.TakeLog();
+        Assert.Contains("Finished", log, StringComparison.Ordinal);
+        Assert.Equal("Finished", tryout.CurrentStep);
+        Assert.Matches(@"^\d+:\d\d$", tryout.ElapsedText);
+    }
+
     private sealed class ScriptedHook : IRecordingHook
     {
         private Action<HookSample>? _callback;
