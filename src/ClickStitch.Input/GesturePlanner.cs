@@ -107,6 +107,10 @@ internal static class GesturePlanner
         return ButtonAt(screen, x, y, button, down: false);
     }
 
+    internal static GesturePreparation MouseDownBy(int dx, int dy, MouseButton button) => ButtonBy(dx, dy, button, down: true);
+
+    internal static GesturePreparation MouseUpBy(int dx, int dy, MouseButton button) => ButtonBy(dx, dy, button, down: false);
+
     internal static GesturePreparation Click(MouseButton button, int count)
     {
         RequireCount(count);
@@ -123,6 +127,12 @@ internal static class GesturePlanner
 
         PlannedEvent move = Unaffected(Mouse(absoluteX, absoluteY, NativeInputConstants.MouseMoveAbsoluteVirtualDesk));
         return GesturePreparation.Ready(ClickEvents(button, count, move));
+    }
+
+    internal static GesturePreparation ClickBy(int dx, int dy, MouseButton button, int count)
+    {
+        RequireCount(count);
+        return GesturePreparation.Ready(ClickEvents(button, count, RelativeMove(dx, dy)));
     }
 
     internal static GesturePreparation Wheel(int notches)
@@ -144,6 +154,21 @@ internal static class GesturePlanner
     internal static GesturePreparation KeyUp(InputKey key)
     {
         return GesturePreparation.Ready(Release(Key(key, up: true), OwnedInput.Key(key)));
+    }
+
+    private static PlannedEvent RelativeMove(int dx, int dy)
+    {
+        (int relativeX, int relativeY) = PointerCoordinates.Relative(dx, dy);
+        return Unaffected(Mouse(relativeX, relativeY, NativeInputConstants.MouseEventMove));
+    }
+
+    private static GesturePreparation ButtonBy(int dx, int dy, MouseButton button, bool down)
+    {
+        (uint downFlag, uint upFlag) = ButtonFlags(button);
+        PlannedEvent buttonEvent = down
+            ? Press(Mouse(0, 0, downFlag), OwnedInput.Mouse(button))
+            : Release(Mouse(0, 0, upFlag), OwnedInput.Mouse(button));
+        return GesturePreparation.Ready(RelativeMove(dx, dy), buttonEvent);
     }
 
     private static GesturePreparation ButtonAt(VirtualScreen screen, int x, int y, MouseButton button, bool down)

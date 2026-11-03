@@ -57,10 +57,19 @@ internal sealed class InputStateManager
     internal OwnershipResult MouseUpAt(VirtualScreen screen, int x, int y, MouseButton button) =>
         Execute(GesturePlanner.MouseUpAt(screen, x, y, button));
 
+    internal OwnershipResult MouseDownBy(int dx, int dy, MouseButton button) =>
+        Execute(GesturePlanner.MouseDownBy(dx, dy, button));
+
+    internal OwnershipResult MouseUpBy(int dx, int dy, MouseButton button) =>
+        Execute(GesturePlanner.MouseUpBy(dx, dy, button));
+
     internal OwnershipResult Click(MouseButton button, int count = 1) => Execute(GesturePlanner.Click(button, count));
 
     internal OwnershipResult ClickAt(VirtualScreen screen, int x, int y, MouseButton button, int count = 1) =>
         Execute(GesturePlanner.ClickAt(screen, x, y, button, count));
+
+    internal OwnershipResult ClickBy(int dx, int dy, MouseButton button, int count = 1) =>
+        Execute(GesturePlanner.ClickBy(dx, dy, button, count));
 
     internal OwnershipResult Wheel(int notches) => Execute(GesturePlanner.Wheel(notches));
 

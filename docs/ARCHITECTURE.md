@@ -38,7 +38,7 @@ Projects that exist now:
 
 | Project | Responsibility |
 |---|---|
-| `ClickStitch.App` | WPF shell. Opens one window. References Core. It does not reference Input. |
+| `ClickStitch.App` | WPF shell. Opens one window. References Core. It also references Input for the temporary tryout panel. |
 | `ClickStitch.Core` | Shared contracts with no UI and no native calls. References no ClickStitch project. |
 | `ClickStitch.Input` | `SendInput` interop, ownership, and the monotonic wait. References no ClickStitch project. |
 | `ClickStitch.Core.Tests` | xUnit tests for Core. |
@@ -79,7 +79,7 @@ Core stays at the bottom. The App is the only project that references WPF. A lat
 
 A macro is a versioned JSON document. It describes actions. It does not contain threads, delegates, UI objects, native handles, plugin instances, or live execution state. Encoding is UTF-8. One macro is one file with the extension `.clickstitch.json`. A reader rejects a document larger than 2 MiB.
 
-`ClickStitch.Core.MacroFormat.CurrentVersion` is `1`. `MacroFormat.IsSupported` returns true only for that version. Parsing and validation are not implemented yet.
+`ClickStitch.Core.MacroFormat.CurrentVersion` is `1`. `MacroFormat.IsSupported` returns true only for that version. `MacroJson` reads and writes that document in Core. A document larger than 2 MiB is rejected. Unknown object members are kept and written back. Unknown action types are errors. Execution of the actions is a later milestone.
 
 ### 5.1 Top-level fields
 
@@ -98,7 +98,7 @@ A macro is a versioned JSON document. It describes actions. It does not contain 
 | `pluginDependencies` | no | Array. Default empty. A non-empty array is invalid in format 1. |
 | `actions` | yes | Array. It may be empty. |
 
-Unknown object members are preserved when a later phase round-trips a document, and execution ignores them. Unknown action types are errors. A missing required field is an error. Duplicate `id` values, variable names, or plugin ids are errors.
+Unknown object members are preserved when a document is written back, and execution ignores them. Unknown action types are errors. A missing required field is an error. Duplicate action ids or variable names are errors. A non-empty `pluginDependencies` array is invalid in format 1.
 
 ### 5.2 Coordinates
 
@@ -115,7 +115,7 @@ Per-action `coordinateMode`:
 | `relative` | `x` and `y` are deltas from the current cursor. |
 | `cursor` | The current cursor. `x` and `y` are omitted. Valid for `mouse.click` and `mouse.hold`. Invalid for `mouse.move`. |
 
-`x` and `y` are integers from -32768 to 32767. A value inside that range can still fall outside the current virtual screen. That is an execution failure in a later phase, reported to the user, and it releases owned inputs.
+`x` and `y` are integers from -32768 to 32767. A value inside that range can still fall outside the current virtual screen. That action fails and nothing is sent for it. When `stopOnError` is true, later actions do not start. Releasing inputs that are already held is still the execution worker's stop path. The macro executor does not start that worker.
 
 ### 5.3 Actions
 
@@ -139,11 +139,33 @@ Every action has:
 
 **`wait`.** `durationMs` is an integer from 0 to 3600000. Zero completes the wait immediately. The specification's illustrative example used the type name `delay`. The schema uses `wait`, which is the word shown in the product. That example was not the final schema.
 
-**`repeat.count`.** `count` is an integer from 1 to 1000000. `actions` is a nested action array and may be empty. Nesting deeper than 8 `repeat.count` levels is invalid. A large count remains cancellable when execution exists. The count limit is not a substitute for cancellation.
+**`repeat.count`.** `count` is an integer from 1 to 1000000. `actions` is a nested action array and may be empty. Nesting deeper than 8 `repeat.count` levels is invalid. A large count stays cancellable. The count limit is not a substitute for cancellation. The runner checks cancellation before each iteration, so an empty child list can still be stopped.
 
 **`comment`.** `text` is a string from 0 to 2000 characters.
 
 These type names are reserved and are invalid in version 1: `repeat.until`, `branch.if`. Plugin action names are also invalid in version 1.
+
+### 5.7 Execution contract
+
+`MacroActionCatalog` names the eight built-in types. `MacroExecution.Compile` turns a validated document into a `MacroRunContract`. That contract is data for a later runner. Compiling it does not submit input.
+
+- A click, move, hold, wheel notch, and key are each one submission. Stop is observed before that submission or after it. A click's button-down and button-up stay in the one submission. A hold that includes a point moves and changes the button in that same submission.
+- A wait can be stopped while it is running. Pause keeps the remaining time. Held buttons and keys stay down.
+- `repeat.count` keeps its count and its child list. The contract does not copy the children once per iteration. Stop is observed before the next child and before the next iteration.
+- A comment submits nothing.
+- Unknown members and variables are not copied into the contract. Format 1 does not evaluate variables.
+- `stopOnError` defaults to true. A submission Windows does not fully accept ends the run when the flag is true.
+- One wheel notch is 120 Windows wheel units. The contract stores the notch count.
+
+`MacroRunner` walks the contract on the calling thread. It calls an `IMacroExecutor` for a click, move, hold, wheel, key, or wait. It does not submit input itself. A comment is marked complete and is not dispatched. `repeat.count` runs that same child list once per count. The children are not copied. The repeat's own id is completed after the last iteration. Cancellation is checked before each child and before each iteration, including a repeat whose child list is empty. A failure follows `stopOnError` for the rest of the iteration, later iterations, and actions after the repeat.
+
+`MacroPause` holds the next action. A click, move, hold, wheel, or key that has already started still finishes as one submission. A wait that is paused keeps the remaining time and continues that remainder on resume. Held buttons and keys stay down, and resume does not press them again. Cancelling while the run is paused does not start the next action. This pause is not wired to a hotkey.
+
+`MacroSession` runs that contract on the execution worker. `Stop` and emergency stop both call the worker stop. The run leaves a wait, a pause, or a repeat before the next child, and the worker then releases owned inputs. A macro that finishes or fails while a key is still down is released the same way. A release Windows does not fully accept can still leave that input held.
+
+`MacroRuns.Prepare` is the gate in front of a run. An invalid document has no contract, and `MacroSession.TryStart` does not start the worker. Progress is a `MacroProgressEvent` for action start, action completion, pause, resume, action failure, and the finish. The session copies those onto the worker's bounded queue. A repeat is one start and one completion, not one record per iteration. `MacroDiagnostic` snapshots the result, the worker state, owned inputs, and that queue. Reading it drains the queue. There is still no log file.
+
+`MacroInputExecutor` is that executor. It submits through `InputStateManager`, so a hold or a key down is owned and a second down is refused. A click's down and up are one batch. A point on the same action is in that same batch. `virtualDesktop` and `primaryDisplay` both use an absolute virtual-desktop move, because the primary display origin is (0, 0) on that desktop. The executor does not clip a primary-display point to the primary monitor. `relative` is a pointer delta and does not read the screen. A wait of zero returns immediately. Any other wait uses `DeadlineWait`. If that wait is cancelled, the action does not complete. A short `SendInput` acceptance fails the action. The executor does not start the worker and does not release held inputs.
 
 ### 5.4 Variables
 
@@ -195,7 +217,7 @@ Each variable has `name`, `type`, and `default`. The name matches `[A-Za-z][A-Za
 
 ## 6. Input interop boundary
 
-`ClickStitch.Input` holds `SendInput`, its structures, and the managed gestures that build those packets. The structures stay internal. The app does not reference this project. Core never declares a native structure. `ExecutionWorker` is the caller that submits input while a run is in progress. The app does not reference it. Macro documents are still Phase 2.
+`ClickStitch.Input` holds `SendInput`, its structures, and the managed gestures that build those packets. The structures stay internal. The app does not reference this project. Core never declares a native structure. `ExecutionWorker` is the caller that submits input while a run is in progress. The tryout panel is the one caller in the shell. Core parses a document and does not submit input. `MacroSession` is the piece that runs a prepared document on the worker. `DesktopTryout` reads the virtual desktop with `GetSystemMetrics` and passes that rectangle in. The gesture code still does not read the screen itself.
 
 Milestone 1.2 gestures are move, button down, button up, click, wheel, key down, and key up. A click is one batch of button-down and button-up, repeated for a count from 1 through 3. A click or button change at a point puts the absolute move in that same batch, ahead of the button. A point outside the virtual screen sends nothing. Modifiers are keys: Shift, Control, Alt, and the two Windows keys are pressed and released on their own, so a chord cannot hide a held key. Arrow keys, Insert, Delete, Home, End, Page Up, Page Down, and both Windows keys set the extended-key flag. The gesture builders do not remember which inputs are held. A batch that Windows only partly accepts is reported and is not retried. Presses that must be tracked go through the input state manager.
 
@@ -228,7 +250,7 @@ Global hotkeys, milestone 1.6:
 - Four roles: start, pause/resume as one toggle, stop, and emergency stop. Each registration adds `MOD_NOREPEAT`. A chord needs at least one modifier, and the main key cannot itself be a modifier.
 - Proposed defaults, not yet chosen by the user: Ctrl+Alt+Shift+F9 starts, F10 pauses or resumes, F11 stops, and F12 is the emergency stop already named below. Two roles cannot share a chord.
 - Emergency dispatch calls only the emergency method, which is `ExecutionWorker.Stop`. It does not call start, pause, or a plugin.
-- A chord Windows rejects is recorded, including error 1409 when another program owns it, and the other roles are still registered. Replacing a role unregisters that id and registers the new chord on the hotkey thread. If the new call fails, the role stays unregistered. If the old registration cannot be removed, the new chord is not registered. The shell does not show this yet, and it does not offer another binding. That screen, and the first-run explanation, are a later phase. The in-window stop control is also later. `ClickStitch.exe` does not register hotkeys, because the WPF project does not reference the input project.
+- A chord Windows rejects is recorded, including error 1409 when another program owns it, and the other roles are still registered. Replacing a role unregisters that id and registers the new chord on the hotkey thread. If the new call fails, the role stays unregistered. If the old registration cannot be removed, the new chord is not registered. The shell does not show this yet, and it does not offer another binding. That screen, and the first-run explanation, are a later phase. The in-window stop control is also later. `ClickStitch.exe` does not register hotkeys. The tryout uses on-screen Pause, Resume, and Stop.
 
 Emergency stop, built in Phase 1:
 
@@ -257,7 +279,7 @@ The worker has an explicit start and stop. Stop is safe to call more than once. 
 
 One execution worker owns scheduling and input submission. A separate background thread owns global hotkey registration and delivery. The WPF dispatcher owns the UI. Disk, plugin discovery, plugin calls, and log sinks run on other threads. The window is not connected to either thread yet.
 
-`ExecutionWorker` schedules from `Stopwatch.GetTimestamp()` through `DeadlineWait` on a background thread named `ClickStitch.Execution`. It does not read the wall clock for delays. The product wait is the hybrid strategy in section 10. The lock that guards the owned-input set is not held during a wait. One worker may bind an input state; a second worker is refused. Progress events travel on a bounded queue of 1000. The worker does not block on the reader or the dispatcher. If the queue is full, the oldest event is dropped and a drop count is kept. A repeat loop is Phase 2. Stop already skips every action that has not started.
+`ExecutionWorker` schedules from `Stopwatch.GetTimestamp()` through `DeadlineWait` on a background thread named `ClickStitch.Execution`. It does not read the wall clock for delays. The product wait is the hybrid strategy in section 10. The lock that guards the owned-input set is not held during a wait. One worker may bind an input state; a second worker is refused. Progress events travel on a bounded queue of 1000. The worker does not block on the reader or the dispatcher. If the queue is full, the oldest event is dropped and a drop count is kept. The repeat contract is in section 5.7. `MacroRunner` runs that count and does not copy the child list. `MacroSession` runs the contract on this worker, so stop and emergency stop end the macro and release owned inputs. Progress for each macro action is copied onto this worker's queue, and the UI is not called. `MacroPause` can hold that run between actions and keep the rest of a wait. It is not connected to the worker pause or to a hotkey.
 
 Execution states: Idle, Running, Paused, Stopping, Stopped, Failed. The window does not show them yet.
 

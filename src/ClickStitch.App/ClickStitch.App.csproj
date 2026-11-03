@@ -8,11 +8,12 @@
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationTitle>ClickStitch</ApplicationTitle>
-    <Description>ClickStitch foundation shell for Windows 11.</Description>
+    <Description>ClickStitch shell for Windows 11. The tryout panel is the only reason this project references Input.</Description>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ClickStitch.Core\ClickStitch.Core.csproj" />
+    <ProjectReference Include="..\ClickStitch.Input\ClickStitch.Input.csproj" />
   </ItemGroup>
 
 </Project>

@@ -24,11 +24,16 @@ internal sealed class WorkerContext
 
     internal InputStateManager Inputs => _worker.Inputs;
 
+    internal DeadlineWait Deadline => _worker.Deadline;
+
     internal CancellationToken Cancellation => _worker.RunCancellation;
 
     internal bool Wait(int milliseconds) => _worker.Wait(milliseconds);
 
     internal void Report(string message) => _worker.Report(WorkerEventKind.Note, actionIndex: -1, message);
+
+    internal void Report(WorkerEventKind kind, int actionIndex, string? message, string? actionId) =>
+        _worker.Report(kind, actionIndex, message, actionId);
 }
 
 internal static class WorkerActions

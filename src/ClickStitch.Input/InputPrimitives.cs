@@ -30,10 +30,19 @@ internal sealed class InputPrimitives
     internal PrimitiveResult MouseUpAt(VirtualScreen screen, int x, int y, MouseButton button) =>
         Submit(GesturePlanner.MouseUpAt(screen, x, y, button));
 
+    internal PrimitiveResult MouseDownBy(int dx, int dy, MouseButton button) =>
+        Submit(GesturePlanner.MouseDownBy(dx, dy, button));
+
+    internal PrimitiveResult MouseUpBy(int dx, int dy, MouseButton button) =>
+        Submit(GesturePlanner.MouseUpBy(dx, dy, button));
+
     internal PrimitiveResult Click(MouseButton button, int count = 1) => Submit(GesturePlanner.Click(button, count));
 
     internal PrimitiveResult ClickAt(VirtualScreen screen, int x, int y, MouseButton button, int count = 1) =>
         Submit(GesturePlanner.ClickAt(screen, x, y, button, count));
+
+    internal PrimitiveResult ClickBy(int dx, int dy, MouseButton button, int count = 1) =>
+        Submit(GesturePlanner.ClickBy(dx, dy, button, count));
 
     internal PrimitiveResult Wheel(int notches) => Submit(GesturePlanner.Wheel(notches));
 

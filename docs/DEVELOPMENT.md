@@ -29,7 +29,7 @@ make run
 make help
 ```
 
-`make` and `make build` compile Release. `CONFIG=Debug` selects the other configuration. `make test` runs the automated tests with `tests.runsettings`. `make clean` cleans Debug and Release, then deletes `bin` and `obj` under `src` and `tests`. `make run` opens the foundation window.
+`make` and `make build` compile Release. `CONFIG=Debug` selects the other configuration. `make test` runs the automated tests with `tests.runsettings`. `make clean` cleans Debug and Release, then deletes `bin` and `obj` under `src` and `tests`. `make run` opens the window. The tryout buttons send real input.
 
 The same actions without Make:
 
@@ -69,7 +69,7 @@ make run
 
 That runs `dotnet run --project src/ClickStitch.App -c Release`.
 
-The window is titled ClickStitch. It states that this build is the project foundation and that macro documents use format version 1. Closing the window exits the process. The shell does not write settings or macros.
+The window is titled ClickStitch. The tryout can move the pointer, click, hold a key, and repeat a click a few times. Pause, Resume, and Stop are on the window. Closing the window stops the run and exits the process. The shell does not write settings or macros, and it does not record.
 
 ## Release build
 

@@ -34,15 +34,15 @@ A first-run experience should include a sample macro and a clear explanation of 
 
 ## Status
 
-**Phase 1 is in progress.** Milestone 1.7, hardening, is awaiting review. See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
+**Phase 2 is in progress.** Milestones 2.8 through 2.10, progress, validation, and diagnostics, are awaiting review. `make run` opens a temporary tryout window that can move, click, hold a key, and repeat a click. See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
 Update this section as phases are approved and finished. The authoritative record is [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
 | Phase | Focus | Status |
 |---|---|---|
 | 0 | Requirements, architecture, and project foundation | Approved |
-| 1 | Windows input engine | Milestone 1.7 awaiting review |
-| 2 | Macro execution | Not authorized |
+| 1 | Windows input engine | Approved |
+| 2 | Macro execution | Milestones 2.8–2.10 awaiting review |
 | 3 | Macro recording | Not authorized |
 | 4 | Plugin SDK and host | Not authorized |
 | 5 | Application UI | Not authorized |

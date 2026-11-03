@@ -44,6 +44,8 @@ internal sealed class ExecutionWorker : IDisposable
 
     internal InputStateManager Inputs { get; }
 
+    internal DeadlineWait Deadline => _wait;
+
     internal WorkerState State
     {
         get
@@ -297,9 +299,9 @@ internal sealed class ExecutionWorker : IDisposable
         return Continue();
     }
 
-    internal void Report(WorkerEventKind kind, int actionIndex, string? message)
+    internal void Report(WorkerEventKind kind, int actionIndex, string? message, string? actionId = null)
     {
-        var workerEvent = new WorkerEvent(kind, actionIndex, message, MonotonicClock.Timestamp);
+        var workerEvent = new WorkerEvent(kind, actionIndex, message, MonotonicClock.Timestamp, actionId);
         lock (_progressGate)
         {
             if (_progress.Count == _progressCapacity)

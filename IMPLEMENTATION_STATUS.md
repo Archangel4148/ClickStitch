@@ -1,17 +1,17 @@
 # Implementation Status — ClickStitch
 
-**Project status:** Phase 1 in progress  
-**Current authorized phase:** Phase 1 — Core Windows Input Engine  
-**Current authorized milestone:** 1.7 Hardening, awaiting review  
-**Human approval to proceed:** Milestones 1.1 through 1.7 were authorized. Milestone 1.6 was approved when 1.7 was authorized. Phase 2 is not started.
+**Project status:** Phase 2 in progress  
+**Current authorized phase:** Phase 2 — Macro Execution Engine  
+**Current authorized milestone:** 2.8–2.10 Progress, validation before a run, and diagnostics, awaiting review  
+**Human approval to proceed:** Milestone 2.7 was approved when 2.8 was authorized. Phase 3 is not started.
 
 ## Phase status
 
 | Phase | Status |
 |---|---|
 | 0 — Requirements, Architecture, Project Foundation | Approved |
-| 1 — Core Windows Input Engine | Milestone 1.7 awaiting review |
-| 2 — Macro Execution Engine | Not authorized |
+| 1 — Core Windows Input Engine | Approved |
+| 2 — Macro Execution Engine | Milestones 2.8–2.10 awaiting review |
 | 3 — Macro Recording | Not authorized |
 | 4 — Plugin SDK and Host | Not authorized |
 | 5 — Application UI and UX | Not authorized |
@@ -40,8 +40,16 @@ None from Phase 0.
 - Phase 1.4 — Timing subsystem. Approved when milestone 1.5 was authorized.
 - Phase 1.5 — Execution worker. Approved when milestone 1.6 was authorized.
 - Phase 1.6 — Global hotkeys. Approved when milestone 1.7 was authorized.
+- Phase 1.7 — Hardening. Approved when Phase 2 was authorized.
+- Phase 2.1 — Macro document model and JSON serialization. Approved when milestone 2.2 was authorized.
+- Phase 2.2 — Action descriptors and execution contracts. Approved when milestone 2.3 was authorized.
+- Phase 2.3 — Sequential action runner. Approved when milestone 2.4 was authorized.
+- Phase 2.4 — Click, move, key, hold, wheel, and wait. Approved when milestone 2.5 was authorized.
+- Phase 2.5 — Repeat counts. Approved when milestone 2.6 was authorized.
+- Phase 2.6 — Pause and resume. Approved when milestone 2.7 was authorized.
+- Phase 2.7 — Cancellation and emergency stop. Approved when milestones 2.8–2.10 were authorized.
 
-Milestone 1.7 is implemented and is not in this list until it is approved.
+Milestones 2.8, 2.9, and 2.10 are implemented and are not in this list until they are approved.
 
 ## Outstanding issues
 
@@ -58,10 +66,10 @@ Release build and Debug build of `ClickStitch.sln` succeeded with 0 warnings and
 dotnet test ClickStitch.sln -c Release --settings tests.runsettings
 ```
 
-Passed: 102. Failed: 0. Skipped: 0.  
-`ClickStitch.Core.Tests.dll`: 4 passed in 6 ms.  
-`ClickStitch.Input.Tests.dll`: 97 passed in 835 ms.  
-`ClickStitch.Performance.Tests.dll`: 1 passed in 60 ms. That test does not submit input.  
+Passed: 173. Failed: 0. Skipped: 0.  
+`ClickStitch.Core.Tests.dll`: 56 passed in 42 ms.  
+`ClickStitch.Input.Tests.dll`: 116 passed in 862 ms.  
+`ClickStitch.Performance.Tests.dll`: 1 passed in 63 ms. That test does not submit input. The tryout window is not part of this run.  
 Release, 2 November 2026. The default run does not call `SendInput` and does not register a usable global hotkey.
 
 `make bench` was run the same evening on the Ryzen 7 7800X3D, Windows 11 build 26200.9711, .NET 10.0.14, Release. The product wait is hybrid. The table is in `docs/TESTING.md`.
@@ -87,3 +95,12 @@ None. The foundation targets .NET 10, which is the current long-term support rel
 - Milestone 1.6 adds global hotkeys through `RegisterHotKey` on a background thread. Proposed chords are Ctrl+Alt+Shift with F9, F10, F11, and F12. A rejected chord does not stop the others. The shell does not listen yet.
 - Milestone 1.7 adds `InputRuntime` shutdown: refuse new work, cancel, release owned inputs, unregister hotkeys, and return one report. A hotkey exception stays on that report. The process is not exited.
 - `make manual` sends one click, F13, one wheel notch, and a held F14 into a window the test owns, then restores the pointer. It is not part of `make test`. The first run passed in 827 ms.
+- Phase 2 authorized. Milestone 2.1 adds `MacroJson`: format-1 documents can be read, validated, and written. Actions are not run.
+- Milestone 2.2 adds the built-in action catalog and `MacroExecution.Compile`. The contract describes each action. It does not submit input.
+- Milestone 2.3 adds `MacroRunner`. It runs top-level actions in order through an executor. A repeat is not entered. The executor in the tests records calls and does not submit input.
+- Milestone 2.4 adds `MacroInputExecutor`. It submits click, move, hold, wheel, key, and wait through the input state. Tests capture `SendInput` and do not touch the desktop. The executor does not start the worker.
+- Milestone 2.5 runs `repeat.count` on the same child list once per count. A count of 1,000,000 with an empty body is not expanded into copies.
+- Milestone 2.6 adds `MacroPause`. The next action waits until resume. A wait keeps its remaining time. A held key stays owned. The pause is not connected to a hotkey.
+- Milestone 2.7 adds `MacroSession`. A macro runs on the execution worker. Stop and emergency stop release held inputs, including during a wait, a pause, or a repeat. Tests capture `SendInput`.
+- Milestones 2.8–2.10 report each macro action on the worker's progress queue, refuse to start an invalid document, and snapshot that queue as the run diagnostic. A repeat is not reported once per iteration. There is no log file.
+- A temporary tryout panel on the main window can move, click, hold a key, and repeat a click. `make run` opens it. It sends real input. It is not the Phase 5 product UI, and it does not record.

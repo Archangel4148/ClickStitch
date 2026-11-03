@@ -20,8 +20,8 @@
 
 | Project | In the default run | Present |
 |---|---|---|
-| `ClickStitch.Core.Tests` | Yes | Phase 0 |
-| `ClickStitch.Input.Tests` | Yes. Layout, submission policy, coordinate math, primitives, ownership, timing, the execution worker, global hotkeys, and shutdown. No desktop injection and no usable global chord. | Phase 1.1 through 1.7 |
+| `ClickStitch.Core.Tests` | Yes. Format version, the document reader, the execution contract, the runner, repeats, pause, progress, and validation before a run. | Phase 0 through Phase 2.10 |
+| `ClickStitch.Input.Tests` | Yes. Layout, submission policy, coordinate math, primitives, ownership, timing, the execution worker, global hotkeys, shutdown, the macro executor, macro stop, and run diagnostics. No desktop injection and no usable global chord. | Phase 1.1 through Phase 2.10 |
 | Execution, recording, and plugin-host test projects | Yes, once they exist, for tests that do not touch the desktop | Later phases |
 | `ClickStitch.Performance.Tests` | Only its opt-in guard. The desktop benchmark is `Category=Performance` and is excluded. | Phase 1 |
 | `ClickStitch.Bench` | No. `make bench` runs it directly. | Phase 1 |
@@ -42,6 +42,94 @@ Result on 2 November 2026: **4 passed, 0 failed, 0 skipped.**
 Assembly: `ClickStitch.Core.Tests.dll` (`net10.0`). Duration reported by the runner after the .NET 10 retarget: 6 ms.
 
 The Phase 0 tests cover `MacroFormat`: version 1 is supported, and versions 0, 2, and -1 are rejected.
+
+## Phase 2.1 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings --filter "Category!=Manual&Category!=Performance"`  
+Result on 2 November 2026: **132 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 34 passed, duration 40 ms.
+- `ClickStitch.Input.Tests.dll`: 97 passed, duration 835 ms.
+- `ClickStitch.Performance.Tests.dll`: 1 passed, duration 67 ms. This test does not submit input.
+
+The new tests read and write format-1 documents. They cover the schema example, unknown members, the action types, repeat nesting, and rejected documents. They do not run actions and they do not call `SendInput`.
+
+## Phase 2.2 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings --filter "Category!=Manual&Category!=Performance"`  
+Result on 2 November 2026: **138 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 40 passed, duration 41 ms.
+- `ClickStitch.Input.Tests.dll`: 97 passed, duration 845 ms.
+- `ClickStitch.Performance.Tests.dll`: 1 passed, duration 3 ms. This test does not submit input.
+
+The new tests check the eight built-in action descriptors and the execution contract: one submission per click, move, hold, wheel, and key; wait pause and stop; a repeat that keeps its count; and a comment that submits nothing. They do not call `SendInput`.
+
+## Phase 2.3 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings --filter "Category!=Manual&Category!=Performance"`  
+Result on 2 November 2026: **143 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 45 passed, duration 38 ms.
+- `ClickStitch.Input.Tests.dll`: 97 passed, duration 853 ms.
+- `ClickStitch.Performance.Tests.dll`: 1 passed, duration 4 ms. This test does not submit input.
+
+The runner tests call a recording executor. They check order, a comment that is not dispatched, `stopOnError`, cancellation between actions, and a repeat that is not entered. They do not call `SendInput`.
+
+## Phase 2.4 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings --filter "Category!=Manual&Category!=Performance"`  
+Result on 2 November 2026: **150 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 45 passed, duration 41 ms.
+- `ClickStitch.Input.Tests.dll`: 104 passed, duration 849 ms.
+- `ClickStitch.Performance.Tests.dll`: 1 passed, duration 67 ms. This test does not submit input.
+
+The executor tests run a compiled document through `MacroRunner` and a capturing `SendInput`. They check one batch per click, move, hold, and wheel, key ownership, a zero wait, a short acceptance, a point outside the screen, and a cancelled wait. They do not call the real `SendInput`.
+
+## Phase 2.5 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings --filter "Category!=Manual&Category!=Performance"`  
+Result on 2 November 2026: **155 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 49 passed, duration 43 ms.
+- `ClickStitch.Input.Tests.dll`: 105 passed, duration 923 ms.
+- `ClickStitch.Performance.Tests.dll`: 1 passed, duration 68 ms. This test does not submit input.
+
+Repeat tests run a count of 3, a nested count, a count of 1,000,000 with an empty child list, cancellation between iterations, and `stopOnError` inside a repeat. The child list stays one list. One input test repeats a captured click twice. None of these call the real `SendInput`.
+
+## Phase 2.6 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings --filter "Category!=Manual&Category!=Performance"`  
+Result on 2 November 2026: **158 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 51 passed, duration 54 ms.
+- `ClickStitch.Input.Tests.dll`: 106 passed, duration 850 ms.
+- `ClickStitch.Performance.Tests.dll`: 1 passed, duration 64 ms. This test does not submit input.
+
+Pause tests block the runner on another thread. They check that the next action waits for resume, that cancellation during the pause does not start it, and that a held key stays owned while a wait keeps the remaining milliseconds. They capture `SendInput` and do not call the real one.
+
+## Phase 2.7 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings --filter "Category!=Manual&Category!=Performance"`  
+Result on 2 November 2026: **163 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 51 passed, duration 39 ms.
+- `ClickStitch.Input.Tests.dll`: 111 passed, duration 836 ms.
+- `ClickStitch.Performance.Tests.dll`: 1 passed, duration 52 ms. This test does not submit input.
+
+Session tests run a macro on the worker and capture `SendInput`. Stop during a wait, stop during a pause, and emergency stop during a repeat each release the held key and skip the rest. A macro that finishes or fails while a key is down is released too. They do not call the real `SendInput` and they do not register a hotkey.
+
+## Phase 2.8 through 2.10 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings --filter "Category!=Manual&Category!=Performance"`  
+Result on 2 November 2026: **171 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 56 passed, duration 52 ms.
+- `ClickStitch.Input.Tests.dll`: 114 passed, duration 839 ms.
+- `ClickStitch.Performance.Tests.dll`: 1 passed, duration 50 ms. This test does not submit input.
+
+Progress tests record each action once. A repeat of 1,000,000 empty steps is one start and one completion. An invalid document is not ready and does not start the worker. A failed action is on the diagnostic snapshot, and the held key is released. These tests capture `SendInput` and do not call the real one. There is no log file.
 
 ## Phase 1.1 automated result
 
