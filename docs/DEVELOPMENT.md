@@ -1,16 +1,99 @@
-# Development Guide — Initial
+# Development Guide — ClickStitch
 
-This document must be completed during Phase 0.
+Phase 0 foundation. Commands below were run on this repository on 2 November 2026.
 
-It must include:
-- Required SDK and workload versions.
-- Supported Windows versions.
-- How to restore/build the solution.
-- How to run unit and integration tests.
-- How to run explicitly opted-in manual input tests safely.
-- How to run performance benchmarks and capture environment details.
-- How to create a Release build.
-- Where local configuration and macro files are stored.
-- How plugin development and local plugin testing work.
+## Requirements
 
-Do not invent commands before the solution and project structure exist.
+- Windows 11, 64-bit.
+- .NET SDK 10.0.403, or a newer SDK on the 10.0 line. `global.json` selects it.
+- The .NET desktop workload, which provides WPF. This machine has `Microsoft.WindowsDesktop.App` 10.0.14.
+
+Check the SDK:
+
+```text
+dotnet --version
+```
+
+Expected on this machine: `10.0.403`.
+
+## Build
+
+From the repository root, `make` wraps the .NET commands. GNU Make on this machine is 4.4.1 and runs recipes with `sh.exe`.
+
+```text
+make
+make CONFIG=Debug
+make test
+make clean
+make run
+make help
+```
+
+`make` and `make build` compile Release. `CONFIG=Debug` selects the other configuration. `make test` runs the automated tests with `tests.runsettings`. `make clean` cleans Debug and Release, then deletes `bin` and `obj` under `src` and `tests`. `make run` opens the foundation window.
+
+The same actions without Make:
+
+```text
+dotnet build ClickStitch.sln -c Release
+dotnet build ClickStitch.sln -c Debug
+dotnet test ClickStitch.sln -c Release --settings tests.runsettings
+dotnet clean ClickStitch.sln -c Release
+dotnet run --project src/ClickStitch.App -c Release
+```
+
+Both configurations succeeded after the .NET 10 retarget, with 0 warnings and 0 errors. The app output is `src/ClickStitch.App/bin/Release/net10.0-windows10.0.22000.0/ClickStitch.exe`.
+
+## Tests
+
+```text
+make test
+```
+
+That runs:
+
+```text
+dotnet test ClickStitch.sln -c Release --settings tests.runsettings
+```
+
+`tests.runsettings` treats a run with zero tests as a failure. After the .NET 10 retarget the result was 4 passed, 0 failed, 0 skipped.
+
+There is no manual input test and no performance project yet. Do not add a command for them until those projects exist. When they do, they carry the trait `Category=Manual` or `Category=Performance` and stay out of the command above.
+
+## Run the shell
+
+```text
+make run
+```
+
+That runs `dotnet run --project src/ClickStitch.App -c Release`.
+
+The window is titled ClickStitch. It states that this build is the project foundation and that macro documents use format version 1. Closing the window exits the process. The shell does not write settings or macros.
+
+## Release build
+
+The Release command above is the release build for this phase. Publishing a self-contained single-file executable is Phase 6 and is not set up.
+
+## Configuration and macros
+
+Planned locations, not created by this build:
+
+- `%LOCALAPPDATA%\ClickStitch\settings.json`
+- `%LOCALAPPDATA%\ClickStitch\Macros\`
+
+## Plugins
+
+Plugin loading is not implemented. A missing `Plugins` directory is the intended steady state until Phase 4. The design is in `docs/PLUGIN_SDK.md`.
+
+## Dependencies
+
+Production projects have no NuGet package references. The Windows target framework brings in the reference pack `Microsoft.Windows.SDK.NET.Ref` 10.0.22000.57.
+
+Test packages, kept from the original xUnit template and verified on .NET 10:
+
+| Package | Version | Role |
+|---|---|---|
+| xunit | 2.5.3 | Test framework. Used for every automated test. |
+| xunit.runner.visualstudio | 2.5.3 | `dotnet test` adapter. |
+| Microsoft.NET.Test.Sdk | 17.8.0 | Test host. |
+
+The template also offered `coverlet.collector` 6.0.0. It is not referenced. This phase does not collect coverage.

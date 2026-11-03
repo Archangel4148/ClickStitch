@@ -2,7 +2,7 @@
 ## ClickStitch
 **Product name:** ClickStitch  
 **Document status:** Draft — architecture and requirements baseline  
-**Target platform:** Windows desktop  
+**Target platform:** Windows 11 desktop  
 **Primary audience:** Non-developers who want approachable, reliable desktop automation  
 **Secondary audience:** Power users and plugin developers
 
@@ -41,7 +41,7 @@ The product is not merely an auto-clicker. It is a visual macro and desktop auto
 
 ## 1.3 Non-goals and boundaries
 
-- The initial product is Windows-only.
+- The initial product runs on Windows 11 only.
 - The initial core does not attempt to automate every application or bypass operating-system security boundaries.
 - The application does not promise real-time scheduling or exact physical input delivery.
 - Plugins are trusted in-process code unless a future isolated plugin-host design is explicitly approved.

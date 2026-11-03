@@ -35,6 +35,7 @@ PublishScripts/
 !.vscode/launch.json
 !.vscode/extensions.json
 .cursor/
+.editorconfig
 
 # Test and coverage results
 [Tt]est[Rr]esult*/

@@ -16,15 +16,69 @@
 - Test emergency stop and cleanup under controlled conditions.
 - Never assume a passing unit test proves physical input delivery works on every desktop.
 
+## Projects
+
+| Project | In the default run | Present |
+|---|---|---|
+| `ClickStitch.Core.Tests` | Yes | Phase 0 |
+| Input, execution, recording, and plugin-host test projects | Yes, once they exist, for tests that do not touch the desktop | Later phases |
+| `ClickStitch.Performance.Tests` | No | Phase 1 |
+| Manual input tests | No | Phase 1 |
+
+Default command:
+
+```text
+dotnet test ClickStitch.sln -c Release --settings tests.runsettings
+```
+
+Performance and manual tests use the traits `Category=Performance` and `Category=Manual`. The default command omits those traits by not containing them. When those tests exist, the default command gains `--filter "Category!=Manual&Category!=Performance"`. Until then, the filter is unnecessary because every current test is a unit test.
+
+## Phase 0 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings`  
+Result on 2 November 2026: **4 passed, 0 failed, 0 skipped.**  
+Assembly: `ClickStitch.Core.Tests.dll` (`net10.0`). Duration reported by the runner after the .NET 10 retarget: 6 ms.
+
+The tests cover `MacroFormat`: version 1 is supported, and versions 0, 2, and -1 are rejected.
+
 ## Timing benchmarks
 
-Record hardware, OS build, runtime version, build configuration, test duration, sample count, requested interval, P50/P95/P99/max scheduling error, submission duration, CPU, and memory.
+The methodology is in `docs/ARCHITECTURE.md` section 10. Summary of the Phase 1 plan:
 
-Compare results only under comparable conditions. Do not present a benchmark as a universal guarantee.
+- Clock: `Stopwatch.GetTimestamp()`.
+- Workload: pointer-move submissions at 10 ms and at 50 ms, at least 1000 samples each after warmup.
+- Record scheduling error and submission duration.
+- Report P50, P95, P99, maximum, CPU, and working set.
+- Record hardware, OS build, runtime version, build configuration, test duration, sample count, requested interval, and known interference.
+- Baseline thread priority is normal. `timeBeginPeriod(1)` is off in the baseline.
+- Compare results only under comparable conditions. A benchmark is a report of that run, not a guarantee about other machines.
+
+No benchmark has been run. There is no numeric performance target.
+
+## Manual acceptance format
+
+Each manual test has an id, a purpose, preconditions, steps, and expected results. Record the machine, the build, and what actually happened.
+
+### CS-M-001 — Foundation window
+
+**Purpose:** Confirm the Phase 0 shell opens and does not present macro controls.
+
+**Preconditions:** Windows 11, 64-bit, with the .NET 10 desktop runtime.
+
+**Steps:**
+
+1. From the repository root, run `dotnet run --project src/ClickStitch.App -c Release`.
+2. Read the window.
+3. Close the window.
+
+**Expected:** The window title is ClickStitch. The window says this build is the project foundation and that macro documents use format version 1. Creating, recording, and running macros are described as later work. No macro starts. Closing the window exits the app.
+
+**Observed on 2 November 2026:** On Windows 11 Home 25H2 build 26200, the Release executable opened a responding window titled ClickStitch with that text, including the terracotta bar from the design tokens. The process was then closed. High contrast and a second DPI setting were not exercised.
 
 ## Milestone completion
 
 Every milestone must have:
+
 - Defined acceptance criteria.
 - Automated test output.
 - Manual test instructions where necessary.

@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.22000.0</TargetFramework>
+    <RootNamespace>ClickStitch</RootNamespace>
+    <AssemblyName>ClickStitch</AssemblyName>
+    <UseWPF>true</UseWPF>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationTitle>ClickStitch</ApplicationTitle>
+    <Description>ClickStitch foundation shell for Windows 11.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ClickStitch.Core\ClickStitch.Core.csproj" />
+  </ItemGroup>
+
+</Project>
