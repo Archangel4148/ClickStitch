@@ -1,5 +1,7 @@
-﻿using System.Windows;
+﻿using System.Runtime.InteropServices;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Threading;
 using ClickStitch.Core;
 using ClickStitch.Input;
@@ -82,11 +84,60 @@ public partial class MainWindow : Window
         _tryout.RepeatClick(x, y, count, repeat, gap);
     }
 
+    private void Record_Click(object sender, RoutedEventArgs e) => _tryout.StartRecording(MovementBox.IsChecked == true);
+
+    private void StopRecording_Click(object sender, RoutedEventArgs e)
+    {
+        WindowPixels(out int left, out int top, out int width, out int height);
+        _tryout.StopRecording(left, top, width, height);
+    }
+
+    private void Play_Click(object sender, RoutedEventArgs e) => _tryout.PlayRecording();
+
     private void Pause_Click(object sender, RoutedEventArgs e) => _tryout.Pause();
 
     private void Resume_Click(object sender, RoutedEventArgs e) => _tryout.Resume();
 
-    private void Stop_Click(object sender, RoutedEventArgs e) => _tryout.Stop();
+    private void Stop_Click(object sender, RoutedEventArgs e)
+    {
+        if (_tryout.IsRecording)
+        {
+            WindowPixels(out int left, out int top, out int width, out int height);
+            _tryout.StopRecording(left, top, width, height);
+        }
+
+        _tryout.Stop();
+    }
+
+    private void WindowPixels(out int left, out int top, out int width, out int height)
+    {
+        left = 0;
+        top = 0;
+        width = 0;
+        height = 0;
+        IntPtr handle = new WindowInteropHelper(this).Handle;
+        if (handle == IntPtr.Zero || !GetWindowRect(handle, out WindowRect rect))
+        {
+            return;
+        }
+
+        left = rect.Left;
+        top = rect.Top;
+        width = Math.Max(0, rect.Right - rect.Left);
+        height = Math.Max(0, rect.Bottom - rect.Top);
+    }
+
+    [DllImport("user32.dll")]
+    private static extern bool GetWindowRect(IntPtr window, out WindowRect rect);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct WindowRect
+    {
+        internal int Left;
+        internal int Top;
+        internal int Right;
+        internal int Bottom;
+    }
 
     private void Refresh()
     {

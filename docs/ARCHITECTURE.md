@@ -277,7 +277,7 @@ The worker has an explicit start and stop. Stop is safe to call more than once. 
 
 ## 8. Scheduler and threading
 
-One execution worker owns scheduling and input submission. A separate background thread owns global hotkey registration and delivery. The WPF dispatcher owns the UI. Disk, plugin discovery, plugin calls, and log sinks run on other threads. The window is not connected to either thread yet.
+One execution worker owns scheduling and input submission. A separate background thread owns global hotkey registration and delivery. While a recording is running, a third background thread named `ClickStitch.Recording` owns the low-level hooks. The WPF dispatcher owns the UI. Disk, plugin discovery, plugin calls, and log sinks run on other threads. The window is not connected to these threads yet.
 
 `ExecutionWorker` schedules from `Stopwatch.GetTimestamp()` through `DeadlineWait` on a background thread named `ClickStitch.Execution`. It does not read the wall clock for delays. The product wait is the hybrid strategy in section 10. The lock that guards the owned-input set is not held during a wait. One worker may bind an input state; a second worker is refused. Progress events travel on a bounded queue of 1000. The worker does not block on the reader or the dispatcher. If the queue is full, the oldest event is dropped and a drop count is kept. The repeat contract is in section 5.7. `MacroRunner` runs that count and does not copy the child list. `MacroSession` runs the contract on this worker, so stop and emergency stop end the macro and release owned inputs. Progress for each macro action is copied onto this worker's queue, and the UI is not called. `MacroPause` can hold that run between actions and keep the rest of a wait. It is not connected to the worker pause or to a hotkey.
 
@@ -294,9 +294,19 @@ Pause semantics:
 
 ## 9. Recording
 
-Phase 3 captures physical input with low-level mouse and keyboard hooks. The hook callback enqueues a small record and returns. Timestamps use the same monotonic clock as the scheduler. Sampling, simplification, and document conversion happen off the hook.
+`RecordingSession` is the life of one recording: idle, recording, stopped, or cancelled. Stop keeps the count. Cancel drops it. The 100,000th event is kept, and the session then stops with a notice.
 
-The default recording option ignores events Windows marks as injected, so playback is less likely to record itself. That flag is a filter, not a guarantee, and the user-facing text should say so. A recording stops and tells the user after 100,000 events. The raw event list lives in memory until the user saves. The saved file is the macro document, so simplification can be undone before save and is not a second file format in this design.
+`RecordingCapture` holds the events for that session. `Win32RecordingHook` installs `WH_MOUSE_LL` and `WH_KEYBOARD_LL` on `ClickStitch.Recording`, which pumps messages. The callback copies one sample, accepts it, and enqueues that record. It calls the next hook and returns. Unhooking and document work stay off the callback. `Collect` copies the queue into the session. When the session reaches the limit, that collector uninstalls the hook.
+
+Buttons and schema keys are accepted. The wheel is accepted by default. Movement is off unless the recording options turn it on. A move stores the virtual-screen point from the hook. A second sample at that same point is left out. A wheel sample stores the signed Windows delta, and one notch is 120 units. A partial notch is kept with the raw delta. The horizontal wheel, X buttons, and virtual keys outside the schema are left out. A second down of a button or key that is already down is left out, so auto-repeat does not fill the list.
+
+The default option ignores events Windows marks as injected, including moves and the wheel, so playback is less likely to record itself. That flag is a filter, not a guarantee, and the user-facing text should say so. Each record stores `Stopwatch.GetTimestamp()` from the callback. `RecordingTime` turns two of those timestamps into elapsed milliseconds. The recording also stores the timestamp from the moment it started.
+
+After the recording has stopped, `Simplify` builds a shorter copy. A move closer in time than the sample interval, or closer in pixels than the minimum distance, is left out of that copy. The last move before a button, key, or wheel is kept. A tolerance then drops a move that sits within that many pixels of the straight line between the moves kept on either side. Buttons, keys, and the wheel stay in place and split the path. Zero for any of those settings skips that step. The raw list is unchanged, and `Revert` discards the copy. The session count stays the raw count.
+
+`ToDocument` writes a format-1 macro from the shortened copy when one exists, and otherwise from the raw list. A move becomes `mouse.move` in virtual-desktop pixels. A button down immediately followed by the same button's up becomes one `mouse.click` at the cursor, so the move before it is what places the pointer. Anything between that down and up becomes `mouse.hold`. Wheel units add up until they make a notch of 120, and a notch count past 100 is split. Keys become `keyboard.key`. Shift, Control, Alt, and the Windows keys can be left out. Gaps between samples become `wait` actions, from the monotonic clock, split at one hour. A release with no recorded press is left out. The raw list stays in memory, so the copy is not a second file format.
+
+`MacroStore` writes that document as `.clickstitch.json`. The file name is a slug of the name, a hyphen, and the macro id. Saving the same id again removes the older file in that folder. The default folder is `%LOCALAPPDATA%\ClickStitch\Macros`. The tryout window can record and play one take. It keeps that take in memory and does not write a file. Clicks and movement on the tryout window itself are left out when recording stops. The default tests drive a scripted hook and do not call `SetWindowsHookEx`. Replay goes through the existing runner.
 
 ## 10. Timing measurement
 
@@ -325,7 +335,7 @@ No timing measurement was taken in Phase 0. The first baseline is in `docs/TESTI
 
 No logging package is referenced. The proposed logger is `Microsoft.Extensions.Logging`, added when a sink is added. Milestone 1.7 diagnostics are the shutdown report and the worker progress queue, which holds 1000 records. When that queue is full, the oldest record is dropped, a drop count increases, and the worker does not wait. Shutdown copies that queue into the report. It does not flush a file.
 
-Configuration will live in `%LOCALAPPDATA%\ClickStitch\settings.json`. Macros will live in `%LOCALAPPDATA%\ClickStitch\Macros\`, one `.clickstitch.json` file each. The macro `id` is the identity. The file name is a slug plus a short suffix so two names can coexist. A corrupt settings file is renamed aside and replaced with defaults, and the app still opens and explains that. This build does not create those files.
+Configuration will live in `%LOCALAPPDATA%\ClickStitch\settings.json`. Macros live in `%LOCALAPPDATA%\ClickStitch\Macros\`, one `.clickstitch.json` file each. The macro `id` is the identity. The file name is a slug of the name plus the id, so two names can coexist. `MacroStore.Save` creates the folder it is given. The shell does not call it. A corrupt settings file is renamed aside and replaced with defaults, and the app still opens and explains that. This build does not create the settings file.
 
 Errors are reported at the subsystem boundary with a plain-language message and a technical detail the user can open. Empty catch blocks are not used.
 

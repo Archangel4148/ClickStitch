@@ -3,9 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="ClickStitch"
         Width="640"
-        Height="760"
+        Height="900"
         MinWidth="520"
-        MinHeight="640"
+        MinHeight="760"
         WindowStartupLocation="CenterScreen"
         Background="#F6F3EE"
         Foreground="#1C2430"
@@ -27,7 +27,7 @@
                    AutomationProperties.Name="ClickStitch" />
         <TextBlock Margin="0,8,0,0"
                    TextWrapping="Wrap"
-                   Text="Tryout. These buttons send real mouse and keyboard input. Aim at an empty spot. Stop releases a held key. Closing the window stops the run." />
+                   Text="Tryout. Record and the buttons below send real input. Aim at an empty spot, not this window. Stop releases a held key. Closing the window stops the run and the recording." />
       </StackPanel>
 
       <DockPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
@@ -77,6 +77,17 @@
           <TextBox x:Name="GapBox" Width="72" Margin="8,0,0,0" Text="200" />
         </StackPanel>
         <Button Content="Repeat click" Margin="0,8,0,0" Padding="12,6" HorizontalAlignment="Left" Click="Repeat_Click" />
+
+        <TextBlock Margin="0,20,0,0" Text="Record and play" FontWeight="SemiBold" />
+        <CheckBox x:Name="MovementBox"
+                  Margin="0,8,0,0"
+                  Content="Include pointer movement"
+                  IsChecked="True" />
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+          <Button Content="Record" Padding="12,6" Click="Record_Click" />
+          <Button Content="Stop recording" Margin="8,0,0,0" Padding="12,6" Click="StopRecording_Click" />
+          <Button Content="Play recording" Margin="8,0,0,0" Padding="12,6" Click="Play_Click" />
+        </StackPanel>
 
         <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
           <Button Content="Pause" Padding="12,6" Click="Pause_Click" />

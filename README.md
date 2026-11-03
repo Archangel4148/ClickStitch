@@ -34,7 +34,7 @@ A first-run experience should include a sample macro and a clear explanation of 
 
 ## Status
 
-**Phase 2 is in progress.** Milestones 2.8 through 2.10, progress, validation, and diagnostics, are awaiting review. `make run` opens a temporary tryout window that can move, click, hold a key, and repeat a click. See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
+**Phase 3 is awaiting review.** A recording can become a macro and replay through the runner. `make run` opens the tryout, which can record the desktop and play that take back. See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
 Update this section as phases are approved and finished. The authoritative record is [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
@@ -42,8 +42,8 @@ Update this section as phases are approved and finished. The authoritative recor
 |---|---|---|
 | 0 | Requirements, architecture, and project foundation | Approved |
 | 1 | Windows input engine | Approved |
-| 2 | Macro execution | Milestones 2.8–2.10 awaiting review |
-| 3 | Macro recording | Not authorized |
+| 2 | Macro execution | Approved |
+| 3 | Macro recording | Awaiting review |
 | 4 | Plugin SDK and host | Not authorized |
 | 5 | Application UI | Not authorized |
 | 6 | Hardening and distribution | Not authorized |

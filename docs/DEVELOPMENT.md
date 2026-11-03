@@ -69,7 +69,7 @@ make run
 
 That runs `dotnet run --project src/ClickStitch.App -c Release`.
 
-The window is titled ClickStitch. The tryout can move the pointer, click, hold a key, and repeat a click a few times. Pause, Resume, and Stop are on the window. Closing the window stops the run and exits the process. The shell does not write settings or macros, and it does not record.
+The window is titled ClickStitch. The tryout can move the pointer, click, hold a key, repeat a click, record the desktop, and play that recording back. Pause, Resume, and Stop are on the window. Pause holds the next action of a playback. Record keeps buttons, keys, and the wheel, and pointer movement when the box is checked. Clicks on the tryout window are left out when recording stops. Play sends that recording as real input. The take stays in memory. The shell does not write settings or a macro file. Closing the window stops the run, uninstalls the hook, and exits the process.
 
 ## Release build
 

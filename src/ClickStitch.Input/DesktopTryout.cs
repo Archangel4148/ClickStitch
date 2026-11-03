@@ -5,37 +5,58 @@ using ClickStitch.Core;
 namespace ClickStitch.Input;
 
 /// <summary>
-/// A temporary panel for trying one move, click, key hold, or short repeat on the real desktop.
-/// It is not the product window. Closing it stops the run and asks Windows to release held inputs.
+/// A temporary panel for trying a move, a click, a key hold, a short repeat, or one recording on the real desktop.
+/// It is not the product window. Closing it stops the run, uninstalls a recording hook, and asks Windows to release held inputs.
 /// </summary>
 public sealed class DesktopTryout : IDisposable
 {
     private readonly ExecutionWorker _worker;
     private readonly MacroPause _pause = new();
     private readonly VirtualScreen _screen;
+    private readonly IRecordingHook _hook;
     private readonly Lock _gate = new();
     private readonly StringBuilder _log = new();
+    private RecordingCapture? _capture;
+    private string? _recordingJson;
     private bool _disposed;
 
-    private DesktopTryout(ExecutionWorker worker, VirtualScreen screen)
+    private DesktopTryout(ExecutionWorker worker, VirtualScreen screen, IRecordingHook hook)
     {
         _worker = worker;
         _screen = screen;
+        _hook = hook;
         Append($"Virtual desktop origin {_screen.Left}, {_screen.Top}. Size {_screen.Width} by {_screen.Height}.");
     }
 
     public static DesktopTryout Create()
     {
         VirtualScreen screen = ReadScreen();
-        return new DesktopTryout(ExecutionWorker.CreateForWindows(), screen);
+        return new DesktopTryout(ExecutionWorker.CreateForWindows(), screen, new Win32RecordingHook());
     }
+
+    internal static DesktopTryout Create(ExecutionWorker worker, VirtualScreen screen, IRecordingHook hook) =>
+        new(worker, screen, hook);
 
     public string State
     {
         get
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_capture?.Session.State == RecordingState.Recording)
+            {
+                return "Recording";
+            }
+
             return _worker.State.ToString();
+        }
+    }
+
+    public bool IsRecording
+    {
+        get
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            return _capture?.Session.State == RecordingState.Recording;
         }
     }
 
@@ -47,6 +68,89 @@ public sealed class DesktopTryout : IDisposable
 
     public void RepeatClick(int x, int y, int count, int repeat, int gapMilliseconds) =>
         Begin(RepeatClickDocument(x, y, count, repeat, gapMilliseconds));
+
+    public void StartRecording(bool captureMovement)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (_worker.State is WorkerState.Running or WorkerState.Paused or WorkerState.Stopping)
+        {
+            Append("A run is already going. Press Stop first.");
+            return;
+        }
+
+        if (IsRecording)
+        {
+            Append("A recording is already going. Press Stop recording first.");
+            return;
+        }
+
+        _capture?.Dispose();
+        _recordingJson = null;
+        _capture = new RecordingCapture(_hook, RecordingOptions.Default with { CaptureMovement = captureMovement });
+        try
+        {
+            _capture.Start();
+            Append(captureMovement
+                ? "Recording the desktop. Buttons, keys, the wheel, and pointer movement are kept. Clicks on this window are left out when you stop. Playback of injected input is ignored."
+                : "Recording the desktop. Buttons, keys, and the wheel are kept. Pointer movement is off, so playback clicks at the cursor. Clicks on this window are left out when you stop.");
+        }
+        catch (Exception error)
+        {
+            Append(error.Message);
+            _capture.Dispose();
+            _capture = null;
+        }
+    }
+
+    public void StopRecording(int windowLeft, int windowTop, int windowWidth, int windowHeight)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (_capture is null || _capture.Session.State != RecordingState.Recording)
+        {
+            Append("There is no recording to stop.");
+            return;
+        }
+
+        _capture.Stop();
+        if (windowWidth > 0 && windowHeight > 0)
+        {
+            _capture.OmitInside(windowLeft, windowTop, windowLeft + windowWidth, windowTop + windowHeight);
+        }
+
+        RecordedDocument recorded = _capture.ToDocument("Tryout recording", "tryout-recording");
+        foreach (string notice in recorded.Notices)
+        {
+            Append(notice);
+        }
+
+        if (!recorded.IsReady || recorded.Document is null)
+        {
+            _recordingJson = null;
+            Append("The recording could not be turned into a macro.");
+            return;
+        }
+
+        _recordingJson = MacroJson.Write(recorded.Document);
+        Append($"Recording stopped. {_capture.Session.Count} samples became {recorded.Document.Actions.Count} actions. Kept in memory for Play recording.");
+    }
+
+    public void PlayRecording()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (IsRecording)
+        {
+            Append("Stop recording before playback. Playback sends real input.");
+            return;
+        }
+
+        if (_recordingJson is null)
+        {
+            Append("Record something first.");
+            return;
+        }
+
+        Begin(_recordingJson);
+    }
 
     public void Pause()
     {
@@ -105,6 +209,7 @@ public sealed class DesktopTryout : IDisposable
         }
 
         _disposed = true;
+        _capture?.Dispose();
         _worker.Stop();
         _pause.Resume();
         _worker.Dispose();
@@ -159,7 +264,8 @@ public sealed class DesktopTryout : IDisposable
                 json,
                 () => _screen,
                 result => Append(result.Status.ToString()),
-                out PreparedMacro prepared);
+                out PreparedMacro prepared,
+                _pause);
             if (!started)
             {
                 Append(prepared.Issues.Count == 0 ? "The document was not accepted." : prepared.Issues[0].Message);

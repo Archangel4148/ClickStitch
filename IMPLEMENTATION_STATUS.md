@@ -1,9 +1,9 @@
 # Implementation Status — ClickStitch
 
-**Project status:** Phase 2 in progress  
-**Current authorized phase:** Phase 2 — Macro Execution Engine  
-**Current authorized milestone:** 2.8–2.10 Progress, validation before a run, and diagnostics, awaiting review  
-**Human approval to proceed:** Milestone 2.7 was approved when 2.8 was authorized. Phase 3 is not started.
+**Project status:** Phase 3 in progress  
+**Current authorized phase:** Phase 3 — Macro Recording  
+**Current authorized milestone:** Phase 3 complete, conversion and save/load, awaiting review  
+**Human approval to proceed:** Milestones 3.7–3.8 were approved when the rest of Phase 3 was authorized. Phase 4 is not started.
 
 ## Phase status
 
@@ -11,8 +11,8 @@
 |---|---|
 | 0 — Requirements, Architecture, Project Foundation | Approved |
 | 1 — Core Windows Input Engine | Approved |
-| 2 — Macro Execution Engine | Milestones 2.8–2.10 awaiting review |
-| 3 — Macro Recording | Not authorized |
+| 2 — Macro Execution Engine | Approved |
+| 3 — Macro Recording | Awaiting review |
 | 4 — Plugin SDK and Host | Not authorized |
 | 5 — Application UI and UX | Not authorized |
 | 6 — Hardening and Distribution | Not authorized |
@@ -48,8 +48,14 @@ None from Phase 0.
 - Phase 2.5 — Repeat counts. Approved when milestone 2.6 was authorized.
 - Phase 2.6 — Pause and resume. Approved when milestone 2.7 was authorized.
 - Phase 2.7 — Cancellation and emergency stop. Approved when milestones 2.8–2.10 were authorized.
+- Phase 2.8–2.10 — Progress, validation before a run, and diagnostics. Approved with the tryout when Phase 3 was authorized.
 
-Milestones 2.8, 2.9, and 2.10 are implemented and are not in this list until they are approved.
+- Phase 3.1 — Recording lifecycle. Approved when milestone 3.2 was authorized.
+- Phase 3.2 — Mouse-button and keyboard capture. Approved when milestones 3.3–3.6 were authorized.
+- Phase 3.3–3.6 — Optional movement, wheel capture, monotonic timestamps, and injected-event filtering. Approved when milestones 3.7–3.8 were authorized.
+- Phase 3.7–3.8 — Sampling, simplification, and raw retention. Approved when the rest of Phase 3 was authorized.
+
+Phase 3 is implemented and is not in the approved list until the phase is approved.
 
 ## Outstanding issues
 
@@ -66,11 +72,11 @@ Release build and Debug build of `ClickStitch.sln` succeeded with 0 warnings and
 dotnet test ClickStitch.sln -c Release --settings tests.runsettings
 ```
 
-Passed: 173. Failed: 0. Skipped: 0.  
-`ClickStitch.Core.Tests.dll`: 56 passed in 42 ms.  
-`ClickStitch.Input.Tests.dll`: 116 passed in 862 ms.  
-`ClickStitch.Performance.Tests.dll`: 1 passed in 63 ms. That test does not submit input. The tryout window is not part of this run.  
-Release, 2 November 2026. The default run does not call `SendInput` and does not register a usable global hotkey.
+Passed: 218. Failed: 0. Skipped: 0.  
+`ClickStitch.Core.Tests.dll`: 64 passed in 51 ms.  
+`ClickStitch.Input.Tests.dll`: 153 passed in 828 ms.  
+`ClickStitch.Performance.Tests.dll`: 1 passed in 62 ms. That test does not submit input. The tryout window is not opened by this run.  
+Release, 2 November 2026. The default run does not call `SendInput`, does not register a usable global hotkey, and does not install a low-level hook. The save/load test uses a temporary folder. The record button is covered with a scripted hook.
 
 `make bench` was run the same evening on the Ryzen 7 7800X3D, Windows 11 build 26200.9711, .NET 10.0.14, Release. The product wait is hybrid. The table is in `docs/TESTING.md`.
 
@@ -103,4 +109,10 @@ None. The foundation targets .NET 10, which is the current long-term support rel
 - Milestone 2.6 adds `MacroPause`. The next action waits until resume. A wait keeps its remaining time. A held key stays owned. The pause is not connected to a hotkey.
 - Milestone 2.7 adds `MacroSession`. A macro runs on the execution worker. Stop and emergency stop release held inputs, including during a wait, a pause, or a repeat. Tests capture `SendInput`.
 - Milestones 2.8–2.10 report each macro action on the worker's progress queue, refuse to start an invalid document, and snapshot that queue as the run diagnostic. A repeat is not reported once per iteration. There is no log file.
-- A temporary tryout panel on the main window can move, click, hold a key, and repeat a click. `make run` opens it. It sends real input. It is not the Phase 5 product UI, and it does not record.
+- A temporary tryout panel on the main window can move, click, hold a key, and repeat a click. `make run` opens it. It sends real input. It is not the Phase 5 product UI, and it does not record. The tryout was approved with Phase 2.
+- Phase 3 authorized. Milestone 3.1 adds `RecordingSession`: start, stop, and cancel, and a stop after 100,000 events. No hook is installed.
+- Milestone 3.2 adds button and key capture. The hook callback enqueues one record and returns. Injected events are ignored by default. Movement, the wheel, and saving a document are not included. The default tests use a scripted hook.
+- Milestones 3.3–3.6 add optional movement, wheel capture, monotonic elapsed time, and the same injected-event filter on moves and the wheel. Sampling and saving a document are not included. The default tests use a scripted hook.
+- Milestones 3.7–3.8 thin movement after the recording stops. The raw list stays in memory, and revert discards the shorter copy. No file is written.
+- Phase 3 closes with conversion of a recording into a format-1 macro, save and load of that file, and replay through the existing runner.
+- The tryout window can record one take and play it back. The take stays in memory. Clicks on the window are left out. Pause now reaches the playback. The default tests use a scripted hook.

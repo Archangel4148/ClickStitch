@@ -20,8 +20,8 @@
 
 | Project | In the default run | Present |
 |---|---|---|
-| `ClickStitch.Core.Tests` | Yes. Format version, the document reader, the execution contract, the runner, repeats, pause, progress, and validation before a run. | Phase 0 through Phase 2.10 |
-| `ClickStitch.Input.Tests` | Yes. Layout, submission policy, coordinate math, primitives, ownership, timing, the execution worker, global hotkeys, shutdown, the macro executor, macro stop, and run diagnostics. No desktop injection and no usable global chord. | Phase 1.1 through Phase 2.10 |
+| `ClickStitch.Core.Tests` | Yes. Format version, the document reader, the execution contract, the runner, repeats, pause, progress, validation before a run, the recording lifecycle, and macro file save/load. | Phase 0 through Phase 3 |
+| `ClickStitch.Input.Tests` | Yes. Layout, submission policy, coordinate math, primitives, ownership, timing, the execution worker, global hotkeys, shutdown, the macro executor, macro stop, run diagnostics, capture through a scripted hook, sampling, simplification, and conversion to a macro that replays through the runner. No desktop injection, no usable global chord, and no low-level hook. | Phase 1.1 through Phase 3 |
 | Execution, recording, and plugin-host test projects | Yes, once they exist, for tests that do not touch the desktop | Later phases |
 | `ClickStitch.Performance.Tests` | Only its opt-in guard. The desktop benchmark is `Category=Performance` and is excluded. | Phase 1 |
 | `ClickStitch.Bench` | No. `make bench` runs it directly. | Phase 1 |
@@ -130,6 +130,65 @@ Result on 2 November 2026: **171 passed, 0 failed, 0 skipped.**
 - `ClickStitch.Performance.Tests.dll`: 1 passed, duration 50 ms. This test does not submit input.
 
 Progress tests record each action once. A repeat of 1,000,000 empty steps is one start and one completion. An invalid document is not ready and does not start the worker. A failed action is on the diagnostic snapshot, and the held key is released. These tests capture `SendInput` and do not call the real one. There is no log file.
+
+## Phase 3.1 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings --filter "Category!=Manual&Category!=Performance"`  
+Result on 2 November 2026: **179 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 62 passed, duration 37 ms.
+- `ClickStitch.Input.Tests.dll`: 116 passed, duration 887 ms.
+- `ClickStitch.Performance.Tests.dll`: 1 passed, duration 57 ms. This test does not submit input.
+
+The new tests start, stop, and cancel a recording session, and they fill the 100,000-event limit. They do not install a hook and they do not call `SendInput`.
+
+## Phase 3.2 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings --filter "Category!=Manual&Category!=Performance"`  
+Result on 2 November 2026: **190 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 62 passed, duration 41 ms.
+- `ClickStitch.Input.Tests.dll`: 127 passed, duration 830 ms.
+- `ClickStitch.Performance.Tests.dll`: 1 passed, duration 53 ms. This test does not submit input.
+
+The new tests feed button and key samples through a scripted hook. Order, timestamps, injected samples, unknown keys, auto-repeat, the 100,000-event cap, stop, cancel, and a failed install are covered. Calling uninstall before install is safe. These tests do not call `SetWindowsHookEx`, `SendInput`, or `RegisterHotKey`.
+
+## Phase 3.3 through 3.6 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings --filter "Category!=Manual&Category!=Performance"`  
+Result on 2 November 2026: **194 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 62 passed, duration 48 ms.
+- `ClickStitch.Input.Tests.dll`: 131 passed, duration 839 ms.
+- `ClickStitch.Performance.Tests.dll`: 1 passed, duration 53 ms. This test does not submit input.
+
+Movement is off unless the test turns it on. A repeated point is dropped, and a new point keeps its coordinates and timestamp. The wheel keeps a delta of 120, -240, and a partial 40. The horizontal wheel is ignored. Injected buttons, moves, and wheel samples are dropped unless the filter is off. Elapsed time is computed from monotonic timestamps. These tests do not call `SetWindowsHookEx`, `SendInput`, or `RegisterHotKey`.
+
+## Phase 3.7 and 3.8 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings --filter "Category!=Manual&Category!=Performance"`  
+Result on 2 November 2026: **205 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 62 passed, duration 49 ms.
+- `ClickStitch.Input.Tests.dll`: 142 passed, duration 846 ms.
+- `ClickStitch.Performance.Tests.dll`: 1 passed, duration 59 ms. This test does not submit input.
+
+Sampling drops moves inside the interval and keeps the last point. A step shorter than the minimum distance is dropped. A point on the straight line is dropped once the tolerance is larger than its distance, and a corner past the tolerance stays. A button splits the path. The raw list and the session count stay put, revert discards the copy, and a rejected setting leaves the previous copy in place. These tests do not call `SetWindowsHookEx`, `SendInput`, or `RegisterHotKey`, and they do not write a file.
+
+## Phase 3.9 and 3.10 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings --filter "Category!=Manual&Category!=Performance"`  
+Result on 2 November 2026: **216 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 64 passed, duration 42 ms.
+- `ClickStitch.Input.Tests.dll`: 151 passed, duration 910 ms.
+- `ClickStitch.Performance.Tests.dll`: 1 passed, duration 53 ms. This test does not submit input.
+
+A move, a click, and the waits around the press become format-1 actions. A drag stays a hold around its moves. Wheel units add up to notches, and a count past 100 is split. Modifiers can be left out. A point outside the schema range is left out. The shortened copy is what gets saved. The document replays through the runner against a stand-in for `SendInput`. Save and load round-trip a file in a temporary folder, and saving the same id under a new name removes the old file. These tests do not call `SetWindowsHookEx` or `RegisterHotKey`, and they do not write under `%LOCALAPPDATA%`.
+
+The tryout's Record, Stop recording, and Play recording buttons are covered without a real hook. A scripted move outside a stand-in window is kept, a click inside that window is left out, and playback submits through a stand-in for `SendInput`. `make run` is the manual check and is not part of this command.
+
+Result on 2 November 2026 after that tryout: **218 passed, 0 failed, 0 skipped.** `ClickStitch.Core.Tests.dll` 64 passed in 51 ms. `ClickStitch.Input.Tests.dll` 153 passed in 828 ms. `ClickStitch.Performance.Tests.dll` 1 passed in 62 ms.
 
 ## Phase 1.1 automated result
 
