@@ -34,14 +34,14 @@ A first-run experience should include a sample macro and a clear explanation of 
 
 ## Status
 
-**Phase 1 is in progress.** Milestone 1.3, the input state manager, is awaiting review. See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
+**Phase 1 is in progress.** Milestone 1.7, hardening, is awaiting review. See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
 Update this section as phases are approved and finished. The authoritative record is [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
 | Phase | Focus | Status |
 |---|---|---|
 | 0 | Requirements, architecture, and project foundation | Approved |
-| 1 | Windows input engine | Milestone 1.3 awaiting review |
+| 1 | Windows input engine | Milestone 1.7 awaiting review |
 | 2 | Macro execution | Not authorized |
 | 3 | Macro recording | Not authorized |
 | 4 | Plugin SDK and host | Not authorized |

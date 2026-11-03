@@ -8,6 +8,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="ClickStitch.Input.Tests" />
+    <InternalsVisibleTo Include="ClickStitch.Performance.Tests" />
+    <InternalsVisibleTo Include="ClickStitch.Bench" />
   </ItemGroup>
 
 </Project>

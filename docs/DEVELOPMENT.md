@@ -57,7 +57,9 @@ dotnet test ClickStitch.sln -c Release --settings tests.runsettings
 
 `tests.runsettings` treats a run with zero tests as a failure. After the .NET 10 retarget the result was 4 passed, 0 failed, 0 skipped.
 
-There is no manual input test and no performance project yet. Do not add a command for them until those projects exist. When they do, they carry the trait `Category=Manual` or `Category=Performance` and stay out of the command above.
+`make test` skips `Category=Performance` and `Category=Manual`. `make bench` is the timing benchmark. It takes about 4 minutes, submits a relative mouse move of 0,0, and prints a line at the start and end of each series plus a "still running" line every 5 seconds. The full report is printed at the end.
+
+`make manual` is the real-input probe. It is not part of `make test`. It opens a small window, moves the pointer into that window, and only then sends one left click, F13, one wheel notch, and a held F14 that the worker releases. F13 and F14 do not type a character. If the window is not in front, or the pointer is not inside it, the probe sends no further input and puts the pointer back.
 
 ## Run the shell
 

@@ -40,9 +40,11 @@ Projects that exist now:
 |---|---|
 | `ClickStitch.App` | WPF shell. Opens one window. References Core. It does not reference Input. |
 | `ClickStitch.Core` | Shared contracts with no UI and no native calls. References no ClickStitch project. |
-| `ClickStitch.Input` | `SendInput` interop. References no ClickStitch project. |
+| `ClickStitch.Input` | `SendInput` interop, ownership, and the monotonic wait. References no ClickStitch project. |
 | `ClickStitch.Core.Tests` | xUnit tests for Core. |
-| `ClickStitch.Input.Tests` | Layout, submission, and coordinate tests. They do not inject input. |
+| `ClickStitch.Input.Tests` | Layout, submission, coordinates, gestures, ownership, and timing. They do not inject input. |
+| `ClickStitch.Performance.Tests` | Opt-in desktop benchmark. Excluded from the default test run. |
+| `ClickStitch.Bench` | Console runner for that benchmark. `make bench`. Prints progress. Not a test project. |
 
 Projects to add in later phases, and not created now:
 
@@ -53,7 +55,6 @@ Projects to add in later phases, and not created now:
 | `ClickStitch.Plugins.Sdk` | 4 | Core. |
 | `ClickStitch.Plugins.Host` | 4 | Core and the SDK. |
 | `ClickStitch.Execution.Tests`, `ClickStitch.Recording.Tests`, `ClickStitch.Plugins.Host.Tests` | Same phase as the project they test | The project under test. |
-| `ClickStitch.Performance.Tests` | 1 | Input. Opt-in. Excluded from the default test run. |
 
 ```text
 ClickStitch.App
@@ -194,7 +195,7 @@ Each variable has `name`, `type`, and `default`. The name matches `[A-Za-z][A-Za
 
 ## 6. Input interop boundary
 
-`ClickStitch.Input` holds `SendInput`, its structures, and the managed gestures that build those packets. The structures stay internal. The app does not reference this project. Core never declares a native structure. The execution worker remains the only future caller that submits input while a macro is running.
+`ClickStitch.Input` holds `SendInput`, its structures, and the managed gestures that build those packets. The structures stay internal. The app does not reference this project. Core never declares a native structure. `ExecutionWorker` is the caller that submits input while a run is in progress. The app does not reference it. Macro documents are still Phase 2.
 
 Milestone 1.2 gestures are move, button down, button up, click, wheel, key down, and key up. A click is one batch of button-down and button-up, repeated for a count from 1 through 3. A click or button change at a point puts the absolute move in that same batch, ahead of the button. A point outside the virtual screen sends nothing. Modifiers are keys: Shift, Control, Alt, and the two Windows keys are pressed and released on their own, so a chord cannot hide a held key. Arrow keys, Insert, Delete, Home, End, Page Up, Page Down, and both Windows keys set the extended-key flag. The gesture builders do not remember which inputs are held. A batch that Windows only partly accepts is reported and is not retried. Presses that must be tracked go through the input state manager.
 
@@ -219,7 +220,15 @@ The division uses 64-bit integers and truncates toward zero. A pixel outside the
 - A fully accepted click ends with that button not held, because the batch contains the matching up.
 - Move and wheel do not change the set. A point outside the screen sends nothing.
 - Physical keys the user is holding are not owned. Startup does not guess about keys left down by a previous process. After a forced process exit or a power loss, no cleanup runs.
-- Pause, stop, and shutdown will call this manager from the execution worker. Those transitions are not implemented in this milestone. Pause must keep holds held. Resume does not send another down. Stop and emergency stop call `ReleaseAllOwnedInputs`.
+- Pause leaves holds down and does not send another down on resume. Stop ends the current wait and calls `ReleaseAllOwnedInputs`. A release Windows does not fully accept leaves the worker failed and the remaining inputs held. Emergency stop uses that same stop path and does not call plugin code.
+
+Global hotkeys, milestone 1.6:
+
+- `RegisterHotKey` with a null window handle, on a background thread named `ClickStitch.Hotkeys` that pumps `WM_HOTKEY`. Stopping the listener posts `WM_QUIT`. There is no low-level keyboard hook.
+- Four roles: start, pause/resume as one toggle, stop, and emergency stop. Each registration adds `MOD_NOREPEAT`. A chord needs at least one modifier, and the main key cannot itself be a modifier.
+- Proposed defaults, not yet chosen by the user: Ctrl+Alt+Shift+F9 starts, F10 pauses or resumes, F11 stops, and F12 is the emergency stop already named below. Two roles cannot share a chord.
+- Emergency dispatch calls only the emergency method, which is `ExecutionWorker.Stop`. It does not call start, pause, or a plugin.
+- A chord Windows rejects is recorded, including error 1409 when another program owns it, and the other roles are still registered. Replacing a role unregisters that id and registers the new chord on the hotkey thread. If the new call fails, the role stays unregistered. If the old registration cannot be removed, the new chord is not registered. The shell does not show this yet, and it does not offer another binding. That screen, and the first-run explanation, are a later phase. The in-window stop control is also later. `ClickStitch.exe` does not register hotkeys, because the WPF project does not reference the input project.
 
 Emergency stop, built in Phase 1:
 
@@ -227,28 +236,30 @@ Emergency stop, built in Phase 1:
 - Registered with `RegisterHotKey` so it works while the window is unfocused. A low-level hook is not the default.
 - It wins over start, pause, and ordinary stop.
 - The worker stops taking new actions, the execution token is cancelled, and owned inputs are released. That path does not call plugin code.
-- If the binding is already taken, the app still starts, explains the conflict, and offers another binding. The in-window stop control still works.
+- If the binding is already taken, registration of the other roles continues and the failed role can be replaced. The app still starts. Explaining the conflict and offering another binding in the window is a later phase. The in-window stop control is also later.
 - First-run explains the binding. That screen is a later phase.
 
-Shutdown order:
+Shutdown order, performed by `InputRuntime` for the pieces that exist:
 
-1. Refuse new work.
-2. Cancel the active macro.
-3. Release owned inputs.
-4. Unregister hotkeys and stop timers. Remove hooks when recording exists.
-5. Shut plugins down in reverse load order, with a bounded wait. A plugin that does not return is logged, and the process still exits.
-6. Flush logs with a bounded wait of 2 seconds.
-7. Exit.
+1. Refuse new work. A later start of the worker or the hotkey listener throws.
+2. Cancel the active run.
+3. Release owned inputs. A release Windows does not fully accept stays on the shutdown report, and the worker stays failed.
+4. Unregister hotkeys and dispose the wait timer. A hotkey that cannot be unregistered stays on the report. Recording hooks do not exist yet.
+5. Plugins are not loaded, so there is nothing to shut down.
+6. There is no log sink. The report keeps the worker's progress queue, including a dropped-event count. A two-second flush arrives with the sink.
+7. The process is not exited. The shell is not connected to this runtime, so shutdown returns the report to the caller.
 
-The worker has an explicit start and stop. Stop is safe to call more than once. Exceptions at the worker boundary are logged, owned inputs are released, and the state becomes failed. They are not discarded.
+A hotkey target that throws is stored on the listener and copied onto the report. The listener still unregisters, and shutdown still releases owned inputs. The exception is not discarded. Calling shutdown again returns the same report.
+
+The worker has an explicit start and stop. Stop is safe to call more than once. Exceptions at the worker boundary are reported on the progress queue, owned inputs are released, and the state becomes failed. They are not discarded.
 
 ## 8. Scheduler and threading
 
-One execution worker owns scheduling and input submission. The WPF dispatcher owns the UI. Disk, plugin discovery, plugin calls, and log sinks run on other threads.
+One execution worker owns scheduling and input submission. A separate background thread owns global hotkey registration and delivery. The WPF dispatcher owns the UI. Disk, plugin discovery, plugin calls, and log sinks run on other threads. The window is not connected to either thread yet.
 
-The worker schedules from `Stopwatch.GetTimestamp()`. It does not read the wall clock for delays. The lock that guards the owned-input set is not held during a wait. Progress events travel on a bounded queue. The worker does not block on the dispatcher. If the queue is full, older progress events are dropped and a drop count is kept.
+`ExecutionWorker` schedules from `Stopwatch.GetTimestamp()` through `DeadlineWait` on a background thread named `ClickStitch.Execution`. It does not read the wall clock for delays. The product wait is the hybrid strategy in section 10. The lock that guards the owned-input set is not held during a wait. One worker may bind an input state; a second worker is refused. Progress events travel on a bounded queue of 1000. The worker does not block on the reader or the dispatcher. If the queue is full, the oldest event is dropped and a drop count is kept. A repeat loop is Phase 2. Stop already skips every action that has not started.
 
-Execution states, for later UI and engine code: Idle, Running, Paused, Stopping, Stopped, Failed.
+Execution states: Idle, Running, Paused, Stopping, Stopped, Failed. The window does not show them yet.
 
 Pause semantics:
 
@@ -274,13 +285,23 @@ Definitions:
 - **Submission duration.** The timestamp after `SendInput` returns, minus the timestamp just before the call.
 - **Delivery.** When the target application handles the input. `SendInput` does not report this, and ClickStitch does not claim it.
 
-Phase 1 adds an opt-in benchmark. It is not part of `dotnet test`. The baseline workload submits pointer moves at 10 ms and at 50 ms, at least 1000 samples each after a short warmup. The report lists P50, P95, P99, maximum scheduling error, submission duration, CPU, and working set, plus machine, Windows build, runtime, configuration, and anything else that would affect the machine. Thread priority for the baseline is normal. `timeBeginPeriod(1)` stays off in the baseline. A later paired run may turn it on and must turn it back off. There is no numeric target until a baseline exists. A result describes that run on that machine.
+`DeadlineWait` does not return before the deadline unless the caller cancelled. One instance is used by one thread. It never calls `timeBeginPeriod` and never changes thread priority.
 
-No timing measurement was taken in Phase 0.
+Three waits were measured:
+
+- **Coarse sleep.** A millisecond wait on a cancellation event. This is the simple scheduler.
+- **High-resolution timer.** `CreateWaitableTimerEx` with `CREATE_WAITABLE_TIMER_HIGH_RESOLUTION`.
+- **Hybrid.** That timer until the last 1.5 ms, then a tight timestamp loop that does not yield. A requested wait of 1.5 ms or less is entirely a spin.
+
+The product wait is hybrid. On the baseline machine a coarse sleep cannot fire faster than about 15.6 ms. The high-resolution timer wakes about 0.3–0.5 ms late. Hybrid median error is under 0.001 ms at 1, 10, and 50 ms. At 1 ms it uses about one core, because the whole wait is inside the spin window. At 10 ms it uses about 0.13 of one core, and at 50 ms about 0.03. That cost is what removes the timer's late wake. `timeBeginPeriod(1)` was not turned on: the high-resolution timer already beats the 15.6 ms tick without changing the system timer.
+
+The benchmark is `make bench`. It is not part of `dotnet test`. Each sample asks for `now + interval` and then submits a relative pointer move of 0,0. A late sample does not make the next one fire early. The report lists P50, P95, P99, and maximum scheduling error, submission duration, and spacing, plus CPU and working set. Thread priority stays normal. A result describes that run on that machine. There is no separate numeric pass/fail target; later runs are compared with this baseline only when the machine and the setup match.
+
+No timing measurement was taken in Phase 0. The first baseline is in `docs/TESTING.md`.
 
 ## 11. Logging, configuration, persistence, and errors
 
-No logging package is referenced in this phase. The proposed logger is `Microsoft.Extensions.Logging`, added in the phase that first needs it. The execution worker enqueues log records onto a bounded channel of 1000. When the channel is full, the oldest record is dropped, a drop count increases, and the worker does not wait. Sinks write elsewhere. Shutdown flushes for up to 2 seconds.
+No logging package is referenced. The proposed logger is `Microsoft.Extensions.Logging`, added when a sink is added. Milestone 1.7 diagnostics are the shutdown report and the worker progress queue, which holds 1000 records. When that queue is full, the oldest record is dropped, a drop count increases, and the worker does not wait. Shutdown copies that queue into the report. It does not flush a file.
 
 Configuration will live in `%LOCALAPPDATA%\ClickStitch\settings.json`. Macros will live in `%LOCALAPPDATA%\ClickStitch\Macros\`, one `.clickstitch.json` file each. The macro `id` is the identity. The file name is a slug plus a short suffix so two names can coexist. A corrupt settings file is renamed aside and replaced with defaults, and the app still opens and explains that. This build does not create those files.
 

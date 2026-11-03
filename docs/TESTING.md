@@ -21,10 +21,11 @@
 | Project | In the default run | Present |
 |---|---|---|
 | `ClickStitch.Core.Tests` | Yes | Phase 0 |
-| `ClickStitch.Input.Tests` | Yes. Layout, submission policy, coordinate math, primitives, and ownership. No desktop injection. | Phase 1.1 through 1.3 |
+| `ClickStitch.Input.Tests` | Yes. Layout, submission policy, coordinate math, primitives, ownership, timing, the execution worker, global hotkeys, and shutdown. No desktop injection and no usable global chord. | Phase 1.1 through 1.7 |
 | Execution, recording, and plugin-host test projects | Yes, once they exist, for tests that do not touch the desktop | Later phases |
-| `ClickStitch.Performance.Tests` | No | Phase 1 |
-| Manual input tests | No | Phase 1 |
+| `ClickStitch.Performance.Tests` | Only its opt-in guard. The desktop benchmark is `Category=Performance` and is excluded. | Phase 1 |
+| `ClickStitch.Bench` | No. `make bench` runs it directly. | Phase 1 |
+| Manual input tests | No. `make manual` runs `Category=Manual` and sets `CLICKSTITCH_MANUAL_INPUT=1`. | Phase 1 |
 
 Default command:
 
@@ -32,7 +33,7 @@ Default command:
 dotnet test ClickStitch.sln -c Release --settings tests.runsettings
 ```
 
-Performance and manual tests use the traits `Category=Performance` and `Category=Manual`. The default command omits those traits by not containing them. When those tests exist, the default command gains `--filter "Category!=Manual&Category!=Performance"`. Until then, the filter is unnecessary because every current test is a unit test.
+Performance and manual tests use the traits `Category=Performance` and `Category=Manual`. The default command passes `--filter "Category!=Manual&Category!=Performance"`, and `tests.runsettings` has the same filter. `make bench` is separate and does submit input.
 
 ## Phase 0 automated result
 
@@ -72,6 +73,39 @@ Result on 2 November 2026: **59 passed, 0 failed, 0 skipped.**
 
 The ownership tests check held keys and buttons, refused second downs, ups that are not owned, click prefixes, and release-all including a short acceptance. They do not call `SendInput`.
 
+## Phase 1.5 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings --filter "Category!=Manual&Category!=Performance"`  
+Result on 2 November 2026: **84 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 4 passed, duration 7 ms.
+- `ClickStitch.Input.Tests.dll`: 79 passed, duration 691 ms.
+- `ClickStitch.Performance.Tests.dll`: 1 passed, duration 96 ms. This test does not submit input.
+
+The worker tests cover a background thread, stop during a wait, pause that keeps a held key and the remaining wait, a failed release, and a full progress queue. They use a stand-in for `SendInput`.
+
+## Phase 1.6 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings --filter "Category!=Manual&Category!=Performance"`  
+Result on 2 November 2026: **92 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 4 passed, duration 6 ms.
+- `ClickStitch.Input.Tests.dll`: 87 passed, duration 704 ms.
+- `ClickStitch.Performance.Tests.dll`: 1 passed, duration 61 ms. This test does not submit input.
+
+The hotkey tests use a stand-in for `RegisterHotKey` and a scripted message pump. They check the proposed chords, a conflict that leaves the other roles registered, replacement, and an emergency press that releases a held key while the worker is paused. One test calls the real `RegisterHotKey` with an undefined modifier flag (`0x1000`) and virtual key `0x70`. Windows returns false and error 1004 (`ERROR_INVALID_FLAGS`), so that call does not take a chord. A virtual key of 0 is accepted by Windows and is not used. The default suite does not register a usable global hotkey. The window is not connected to the listener, so a manual hotkey check is not available until a later phase wires the shell.
+
+## Phase 1.7 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings --filter "Category!=Manual&Category!=Performance"`  
+Result on 2 November 2026: **102 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 4 passed, duration 6 ms.
+- `ClickStitch.Input.Tests.dll`: 97 passed, duration 835 ms.
+- `ClickStitch.Performance.Tests.dll`: 1 passed, duration 60 ms. This test does not submit input.
+
+The hardening tests use a stand-in for `SendInput` and a stand-in for `RegisterHotKey`. They stop during a click that has not released, a held key, a drag, a pause, and 20 repeated holds. Shutdown during a run refuses another start, keeps one report, and releases a held key. An action exception and a failed release both appear on that report. A hotkey target that throws is on the report, and the held key is still released. A hotkey that cannot be unregistered stays listed. The window is not connected, so there is no manual shutdown check.
+
 ## Timing benchmarks
 
 The methodology is in `docs/ARCHITECTURE.md` section 10. Summary of the Phase 1 plan:
@@ -84,7 +118,33 @@ The methodology is in `docs/ARCHITECTURE.md` section 10. Summary of the Phase 1 
 - Baseline thread priority is normal. `timeBeginPeriod(1)` is off in the baseline.
 - Compare results only under comparable conditions. A benchmark is a report of that run, not a guarantee about other machines.
 
-No benchmark has been run. There is no numeric performance target.
+`make bench` prints a line as each series starts, a "still running" line every 5 seconds from another thread, and the report at the end. The sample loop does not log. There is no separate numeric pass/fail target. This run is the baseline.
+
+## Phase 1.4 benchmark result
+
+Command: `make bench`  
+Release, 2 November 2026. 1000 measured samples and 50 warmup samples per series. Thread priority Normal. `timeBeginPeriod` off. Relative pointer move of 0,0. Early samples: 0. Submission failures: 0.
+
+Machine: AMD Ryzen 7 7800X3D, 16 logical processors. Windows registry ProductName "Windows 10 Home", DisplayVersion 25H2, build 26200.9711. `RtlGetVersion` 10.0.26200. .NET 10.0.14. Stopwatch frequency 10,000,000.
+
+Scheduling error is how late the wait woke. Spacing is the time from one submit to the next, so it includes the requested interval and the `SendInput` call. Times are milliseconds.
+
+| Wait | Interval | Error P50 | Error P99 | Error max | Spacing P50 | Spacing P99 | Core fraction |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Hybrid, no wait | 0 | 0.001 | 0.002 | 0.042 | 0.047 | 0.241 | 0.000 |
+| Coarse sleep | 1 | 14.565 | 15.545 | 15.855 | 15.670 | 16.644 | 0.005 |
+| Coarse sleep | 10 | 5.597 | 6.532 | 6.562 | 15.714 | 16.627 | 0.002 |
+| Coarse sleep | 50 | 13.113 | 14.959 | 15.791 | 63.236 | 65.066 | 0.001 |
+| High-resolution timer | 1 | 0.463 | 0.553 | 1.036 | 1.513 | 1.622 | 0.010 |
+| High-resolution timer | 10 | 0.419 | 0.588 | 0.901 | 10.520 | 10.677 | 0.002 |
+| High-resolution timer | 50 | 0.322 | 0.548 | 1.124 | 50.401 | 50.662 | 0.001 |
+| Hybrid, 1.5 ms spin | 1 | 0.000 | 0.101 | 0.276 | 1.047 | 1.185 | 0.965 |
+| Hybrid, 1.5 ms spin | 10 | 0.000 | 0.010 | 0.146 | 10.072 | 10.151 | 0.126 |
+| Hybrid, 1.5 ms spin | 50 | 0.000 | 0.016 | 0.120 | 50.074 | 50.156 | 0.025 |
+
+`SendInput` itself took about 0.05–0.11 ms at P50 and up to about 0.55 ms at the maximum, depending on the series. The cursor stayed put across the back-to-back submits. It changed once during the coarse 1 ms series, from (1602, 190) to (1090, 952), and stayed there afterward. That series also allows physical movement. Working set stayed between 26.7 and 29.6 MB.
+
+The product wait is hybrid. A 1 ms request is met; coarse sleep cannot beat the 15.6 ms tick. `timeBeginPeriod(1)` was not enabled. One hybrid 50 ms gap reached 53.349 ms while the wait error on that series never exceeded 0.120 ms, so that outlier was time between actions rather than a late wake.
 
 ## Manual acceptance format
 
@@ -105,6 +165,22 @@ Each manual test has an id, a purpose, preconditions, steps, and expected result
 **Expected:** The window title is ClickStitch. The window says this build is the project foundation and that macro documents use format version 1. Creating, recording, and running macros are described as later work. No macro starts. Closing the window exits the app.
 
 **Observed on 2 November 2026:** On Windows 11 Home 25H2 build 26200, the Release executable opened a responding window titled ClickStitch with that text, including the terracotta bar from the design tokens. The process was then closed. High contrast and a second DPI setting were not exercised.
+
+### CS-M-002 — Real input inside the probe window
+
+**Purpose:** Confirm a click, a key, a wheel notch, and a released hold reach a window this process owns, and nowhere else.
+
+**Preconditions:** Windows 11, 64-bit. Leave the mouse and keyboard alone while the probe window is up. The run takes a few seconds.
+
+**Steps:**
+
+1. From the repository root, run `make manual`.
+2. A window titled ClickStitch probe appears. The pointer moves into it, then returns.
+3. Read the test output.
+
+**Expected:** The probe receives one left click near its center, F13 down and up, one wheel notch, and F14 down and up. No right click and no Alt menu key. The owned-input set is empty at the end. The pointer is back where it started. If the probe cannot come to the front, the test stops and reports that no click, key, or wheel was sent.
+
+**Observed on 2 November 2026:** `make manual` on this machine, Release. 1 passed, 0 failed, 0 skipped, duration 827 ms. The probe came to the front, accepted the click near the center, F13, one wheel notch, and the F14 hold released by the worker. The owned-input set was empty and the pointer was put back. No right click and no Alt menu key were observed by the window.
 
 ## Milestone completion
 

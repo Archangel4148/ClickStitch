@@ -11,6 +11,7 @@ internal sealed class InputStateManager
     private readonly SendInputBatch _batch;
     private readonly Lock _gate = new();
     private readonly HashSet<OwnedInput> _owned = [];
+    private object? _boundWorker;
 
     internal InputStateManager(SendInputBatch batch)
     {
@@ -19,6 +20,20 @@ internal sealed class InputStateManager
     }
 
     internal static InputStateManager CreateForWindows() => new(SendInputBatch.CreateForWindows());
+
+    /// <summary>
+    /// One execution worker may own this state. A second worker is refused so two threads cannot submit input for it.
+    /// </summary>
+    internal void BindWorker(object worker)
+    {
+        ArgumentNullException.ThrowIfNull(worker);
+        if (Interlocked.CompareExchange(ref _boundWorker, worker, null) != null)
+        {
+            throw new InvalidOperationException("This input state already has an execution worker.");
+        }
+    }
+
+    internal void UnbindWorker(object worker) => Interlocked.CompareExchange(ref _boundWorker, null, worker);
 
     internal OwnedInput[] Snapshot()
     {
