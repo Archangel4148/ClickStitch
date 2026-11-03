@@ -21,7 +21,8 @@
 | Project | In the default run | Present |
 |---|---|---|
 | `ClickStitch.Core.Tests` | Yes | Phase 0 |
-| Input, execution, recording, and plugin-host test projects | Yes, once they exist, for tests that do not touch the desktop | Later phases |
+| `ClickStitch.Input.Tests` | Yes. Layout, submission policy, coordinate math, primitives, and ownership. No desktop injection. | Phase 1.1 through 1.3 |
+| Execution, recording, and plugin-host test projects | Yes, once they exist, for tests that do not touch the desktop | Later phases |
 | `ClickStitch.Performance.Tests` | No | Phase 1 |
 | Manual input tests | No | Phase 1 |
 
@@ -39,7 +40,37 @@ Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings`
 Result on 2 November 2026: **4 passed, 0 failed, 0 skipped.**  
 Assembly: `ClickStitch.Core.Tests.dll` (`net10.0`). Duration reported by the runner after the .NET 10 retarget: 6 ms.
 
-The tests cover `MacroFormat`: version 1 is supported, and versions 0, 2, and -1 are rejected.
+The Phase 0 tests cover `MacroFormat`: version 1 is supported, and versions 0, 2, and -1 are rejected.
+
+## Phase 1.1 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings`  
+Result on 2 November 2026: **24 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 4 passed, duration 6 ms.
+- `ClickStitch.Input.Tests.dll`: 20 passed, duration 28 ms.
+
+The input tests check x64 structure sizes and offsets, batch error handling through a stand-in for `SendInput`, and absolute/relative coordinate conversion. They do not call `SendInput`.
+
+## Phase 1.2 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings`  
+Result on 2 November 2026: **44 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 4 passed, duration 5 ms.
+- `ClickStitch.Input.Tests.dll`: 40 passed, duration 29 ms.
+
+The new tests check clicks, moves, wheel notches, the schema key list, modifier chords, and the extended-key flag. They capture packets through a stand-in and do not call `SendInput`.
+
+## Phase 1.3 automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings`  
+Result on 2 November 2026: **59 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 4 passed, duration 6 ms.
+- `ClickStitch.Input.Tests.dll`: 55 passed, duration 29 ms.
+
+The ownership tests check held keys and buttons, refused second downs, ups that are not owned, click prefixes, and release-all including a short acceptance. They do not call `SendInput`.
 
 ## Timing benchmarks
 

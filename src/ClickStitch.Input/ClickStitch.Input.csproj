@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.22000.0</TargetFramework>
+    <RootNamespace>ClickStitch.Input</RootNamespace>
+    <Description>Windows SendInput interop. This project references no other ClickStitch project.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ClickStitch.Input.Tests" />
+  </ItemGroup>
+
+</Project>

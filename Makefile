@@ -26,7 +26,7 @@ test:
 clean:
 	dotnet clean $(SOLUTION) -c Debug
 	dotnet clean $(SOLUTION) -c Release
-	powershell -NoProfile -Command "Remove-Item -Recurse -Force -ErrorAction SilentlyContinue 'src/ClickStitch.App/bin','src/ClickStitch.App/obj','src/ClickStitch.Core/bin','src/ClickStitch.Core/obj','tests/ClickStitch.Core.Tests/bin','tests/ClickStitch.Core.Tests/obj'"
+	powershell -NoProfile -Command "Remove-Item -Recurse -Force -ErrorAction SilentlyContinue 'src/ClickStitch.App/bin','src/ClickStitch.App/obj','src/ClickStitch.Core/bin','src/ClickStitch.Core/obj','src/ClickStitch.Input/bin','src/ClickStitch.Input/obj','tests/ClickStitch.Core.Tests/bin','tests/ClickStitch.Core.Tests/obj','tests/ClickStitch.Input.Tests/bin','tests/ClickStitch.Input.Tests/obj'"
 
 run:
 	dotnet run --project $(APP) -c $(CONFIG)

@@ -1,16 +1,16 @@
 # Implementation Status — ClickStitch
 
-**Project status:** Phase 0 approved. Phase 1 has not started.  
-**Current authorized phase:** Phase 0 is complete. Phase 1 is not authorized until the human says to start it.  
-**Current authorized milestone:** None in progress  
-**Human approval to proceed:** Phase 0 approved. Phase 1 not started.
+**Project status:** Phase 1 in progress  
+**Current authorized phase:** Phase 1 — Core Windows Input Engine  
+**Current authorized milestone:** 1.3 Input State Manager, awaiting review  
+**Human approval to proceed:** Milestones 1.1 through 1.3 were authorized. Milestone 1.4 is not started.
 
 ## Phase status
 
 | Phase | Status |
 |---|---|
 | 0 — Requirements, Architecture, Project Foundation | Approved |
-| 1 — Core Windows Input Engine | Not authorized |
+| 1 — Core Windows Input Engine | Milestone 1.3 awaiting review |
 | 2 — Macro Execution Engine | Not authorized |
 | 3 — Macro Recording | Not authorized |
 | 4 — Plugin SDK and Host | Not authorized |
@@ -34,6 +34,10 @@ None from Phase 0.
 ## Completed milestones
 
 - Phase 0 — Requirements, Architecture, and Project Foundation. Approved before Phase 1.
+- Phase 1.1 — Native interop. Approved when milestone 1.2 was authorized.
+- Phase 1.2 — Input primitives. Approved when milestone 1.3 was authorized.
+
+Milestone 1.3 is implemented and is not in this list until it is approved.
 
 ## Outstanding issues
 
@@ -50,8 +54,10 @@ Release build and Debug build of `ClickStitch.sln` succeeded with 0 warnings and
 dotnet test ClickStitch.sln -c Release --settings tests.runsettings
 ```
 
-Passed: 4. Failed: 0. Skipped: 0.  
-`ClickStitch.Core.Tests.dll` (`net10.0`), 2 November 2026, after the retarget. Duration reported by the runner: 6 ms.
+Passed: 59. Failed: 0. Skipped: 0.  
+`ClickStitch.Core.Tests.dll`: 4 passed in 6 ms.  
+`ClickStitch.Input.Tests.dll`: 55 passed in 29 ms.  
+Release, 2 November 2026. The input tests do not call `SendInput`. Debug build of the solution succeeded with 0 warnings and 0 errors.
 
 Manual test CS-M-001 was run on Windows 11 Home 25H2 build 26200. The foundation window opened, showed the expected text, and was closed. Details are in `docs/TESTING.md`.
 
@@ -68,3 +74,6 @@ None. The foundation targets .NET 10, which is the current long-term support rel
 - Phase 0 foundation added: solution, WPF shell, `MacroFormat`, xUnit tests, and the architecture, development, testing, plugin, and UX documents. Supported operating system set to Windows 11.
 - Retargeted the foundation from .NET 8 to .NET 10 after SDK 10.0.403 was installed. Release and Debug builds succeeded, and the same 4 tests passed.
 - Phase 0 approved by the human. Added a root `Makefile` for build, test, clean, and run before Phase 1.
+- Phase 1 authorized. Milestone 1.1 adds `ClickStitch.Input` with `SendInput` structures, constants, submission results, and absolute/relative coordinate conversion. No input is injected by the tests or the shell.
+- Milestone 1.2 adds mouse move, button, click, and wheel gestures, plus key down and key up for the schema key list. Tests capture packets through a stand-in and do not call `SendInput`.
+- Milestone 1.3 adds `InputStateManager`: ownership of successful presses, refusal of a second press, and idempotent release-all that keeps any input Windows did not accept.

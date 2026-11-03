@@ -38,25 +38,28 @@ Projects that exist now:
 
 | Project | Responsibility |
 |---|---|
-| `ClickStitch.App` | WPF shell. Opens one window. References Core. |
+| `ClickStitch.App` | WPF shell. Opens one window. References Core. It does not reference Input. |
 | `ClickStitch.Core` | Shared contracts with no UI and no native calls. References no ClickStitch project. |
+| `ClickStitch.Input` | `SendInput` interop. References no ClickStitch project. |
 | `ClickStitch.Core.Tests` | xUnit tests for Core. |
+| `ClickStitch.Input.Tests` | Layout, submission, and coordinate tests. They do not inject input. |
 
 Projects to add in later phases, and not created now:
 
 | Project | Phase | May reference |
 |---|---|---|
-| `ClickStitch.Input` | 1 | Nothing in the UI, execution, or plugin host. Native `SendInput` stays inside this project. |
 | `ClickStitch.Execution` | 2 | Core and Input. |
 | `ClickStitch.Recording` | 3 | Core and Input. |
 | `ClickStitch.Plugins.Sdk` | 4 | Core. |
 | `ClickStitch.Plugins.Host` | 4 | Core and the SDK. |
-| `ClickStitch.Input.Tests`, `ClickStitch.Execution.Tests`, `ClickStitch.Recording.Tests`, `ClickStitch.Plugins.Host.Tests` | Same phase as the project they test | The project under test. |
+| `ClickStitch.Execution.Tests`, `ClickStitch.Recording.Tests`, `ClickStitch.Plugins.Host.Tests` | Same phase as the project they test | The project under test. |
 | `ClickStitch.Performance.Tests` | 1 | Input. Opt-in. Excluded from the default test run. |
 
 ```text
 ClickStitch.App
   └── ClickStitch.Core
+
+ClickStitch.Input
 
 Later:
 
@@ -191,21 +194,32 @@ Each variable has `name`, `type`, and `default`. The name matches `[A-Za-z][A-Za
 
 ## 6. Input interop boundary
 
-Phase 1 puts `SendInput` and its structures in `ClickStitch.Input`. Those structures stay internal to that project. Callers use managed operations for move, button, wheel, and key. Core never declares a native structure. The execution worker is the only caller that submits input while a macro is running.
+`ClickStitch.Input` holds `SendInput`, its structures, and the managed gestures that build those packets. The structures stay internal. The app does not reference this project. Core never declares a native structure. The execution worker remains the only future caller that submits input while a macro is running.
+
+Milestone 1.2 gestures are move, button down, button up, click, wheel, key down, and key up. A click is one batch of button-down and button-up, repeated for a count from 1 through 3. A click or button change at a point puts the absolute move in that same batch, ahead of the button. A point outside the virtual screen sends nothing. Modifiers are keys: Shift, Control, Alt, and the two Windows keys are pressed and released on their own, so a chord cannot hide a held key. Arrow keys, Insert, Delete, Home, End, Page Up, Page Down, and both Windows keys set the extended-key flag. The gesture builders do not remember which inputs are held. A batch that Windows only partly accepts is reported and is not retried. Presses that must be tracked go through the input state manager.
+
+On x64 the native packet is 40 bytes. `type` is at offset 0, and the mouse, keyboard, and hardware union starts at byte 8. Mouse `dwExtraInfo` is at byte 24 of the mouse struct. Keyboard `dwExtraInfo` is at byte 16 of the keyboard struct. Layout tests lock these sizes. Hardware packets exist so the union matches Win32, and submission rejects them.
+
+`SendInput` reports how many events Windows accepted. A short count is a failure. The Win32 error is read immediately after the call and kept only when the count is short. A successful call can leave a stale error code, and that code is not reported as a failure. An empty batch does not call `SendInput`.
+
+Absolute positions are physical pixels of the virtual desktop, not WPF device-independent units. `TryToAbsolute` maps a pixel inside that screen to the 0–65535 range used with `MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK`:
+
+`((pixel - origin) * 65535) / (extent - 1)`
+
+The division uses 64-bit integers and truncates toward zero. A pixel outside the screen is rejected. The screen rectangle comes from `GetSystemMetrics`: `SM_XVIRTUALSCREEN` (76), `SM_YVIRTUALSCREEN` (77), `SM_CXVIRTUALSCREEN` (78), and `SM_CYVIRTUALSCREEN` (79). The primitives take a `VirtualScreen` from the caller and do not call `GetSystemMetrics` yet. Relative deltas stay in the schema range -32768 through 32767. A relative `SendInput` move is pointer motion, and Windows may apply acceleration, so a relative delta is not a promise of an exact pixel. Wheel notches are multiplied by 120. Positive notches scroll away from the user.
 
 ## 7. Input ownership, cancellation, emergency stop, and shutdown
 
-The input state manager, built in Phase 1, is the single record of buttons and keys the engine has successfully pressed and not yet released.
+`InputStateManager` is the single record of buttons and keys this process has successfully pressed and not yet released. A lock covers the ownership check and the `SendInput` call. It is not held across a wait.
 
-- A successful down adds that key or button to the owned set. A second down for an already owned item is refused and reported.
-- A successful up removes it. An up for an item the engine does not own is not sent.
-- `ReleaseAllOwnedInputs` submits an up for each owned item and removes an item only after Windows accepts that up. Calling it again submits nothing.
-- `SendInput` can accept a prefix of a batch. Ownership follows the accepted prefix, and the shortfall is an error.
-- Idle, stopped, and shut-down states own nothing. A failed release leaves the remaining items in the set, sets the state to failed, and reports the failure. The set is not cleared by pretending the release worked.
-- Physical keys the user is holding are not owned.
-- After a forced process exit or a power loss, no cleanup runs. Startup does not try to invent which keys were held. That residual risk stays in the user-facing documentation.
-
-Pause keeps held buttons and keys held. Resume does not send another down. Stop and emergency stop release them.
+- A successful down adds that key or button. A second down of an owned input is refused and nothing is sent, so two callers cannot both believe they hold it.
+- A successful up removes it. An up for an input the engine does not own is not sent.
+- `ReleaseAllOwnedInputs` submits an up for each owned input, mouse buttons first and then keys in schema order. An input leaves the set only after Windows accepts that up. Calling it again when the set is empty submits nothing.
+- Ownership follows the accepted prefix of a batch. A click that Windows accepts only through the down leaves the button held. The batch is not retried. A failed release leaves the remaining inputs in the set and reports the shortfall.
+- A fully accepted click ends with that button not held, because the batch contains the matching up.
+- Move and wheel do not change the set. A point outside the screen sends nothing.
+- Physical keys the user is holding are not owned. Startup does not guess about keys left down by a previous process. After a forced process exit or a power loss, no cleanup runs.
+- Pause, stop, and shutdown will call this manager from the execution worker. Those transitions are not implemented in this milestone. Pause must keep holds held. Resume does not send another down. Stop and emergency stop call `ReleaseAllOwnedInputs`.
 
 Emergency stop, built in Phase 1:
 

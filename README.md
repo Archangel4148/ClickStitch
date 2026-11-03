@@ -34,14 +34,14 @@ A first-run experience should include a sample macro and a clear explanation of 
 
 ## Status
 
-**Phase 0 is approved.** The foundation solution, shell, and design documents are in the repository. Phase 1 has not started. See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
+**Phase 1 is in progress.** Milestone 1.3, the input state manager, is awaiting review. See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
 Update this section as phases are approved and finished. The authoritative record is [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
 | Phase | Focus | Status |
 |---|---|---|
 | 0 | Requirements, architecture, and project foundation | Approved |
-| 1 | Windows input engine | Not authorized |
+| 1 | Windows input engine | Milestone 1.3 awaiting review |
 | 2 | Macro execution | Not authorized |
 | 3 | Macro recording | Not authorized |
 | 4 | Plugin SDK and host | Not authorized |
@@ -59,7 +59,7 @@ SPECIFICATION.md           Requirements, roadmap, and acceptance criteria
 IMPLEMENTATION_STATUS.md   Current phase, decisions, and known issues
 AI_INSTRUCTIONS.md         Rules for coding agents working in this repo
 docs/                      Architecture, development, testing, plugins, and UX
-src/                       WPF shell and UI-free core library
+src/                       WPF shell, core library, and input interop
 tests/                     xUnit tests
 ClickStitch.sln           Solution
 Makefile                   build, test, clean, and run
