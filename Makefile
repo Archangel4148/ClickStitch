@@ -36,7 +36,7 @@ manual:
 clean:
 	dotnet clean $(SOLUTION) -c Debug
 	dotnet clean $(SOLUTION) -c Release
-	powershell -NoProfile -Command "Remove-Item -Recurse -Force -ErrorAction SilentlyContinue 'src/ClickStitch.App/bin','src/ClickStitch.App/obj','src/ClickStitch.Core/bin','src/ClickStitch.Core/obj','src/ClickStitch.Input/bin','src/ClickStitch.Input/obj','tests/ClickStitch.Core.Tests/bin','tests/ClickStitch.Core.Tests/obj','tests/ClickStitch.Input.Tests/bin','tests/ClickStitch.Input.Tests/obj','tests/ClickStitch.Performance.Tests/bin','tests/ClickStitch.Performance.Tests/obj','tests/ClickStitch.Bench/bin','tests/ClickStitch.Bench/obj'"
+	powershell -NoProfile -Command "Remove-Item -Recurse -Force -ErrorAction SilentlyContinue 'src/ClickStitch.App/bin','src/ClickStitch.App/obj','src/ClickStitch.Core/bin','src/ClickStitch.Core/obj','src/ClickStitch.Input/bin','src/ClickStitch.Input/obj','src/ClickStitch.Plugins.Sdk/bin','src/ClickStitch.Plugins.Sdk/obj','src/ClickStitch.Plugins.Host/bin','src/ClickStitch.Plugins.Host/obj','tests/ClickStitch.Core.Tests/bin','tests/ClickStitch.Core.Tests/obj','tests/ClickStitch.Input.Tests/bin','tests/ClickStitch.Input.Tests/obj','tests/ClickStitch.Plugins.Sdk.Tests/bin','tests/ClickStitch.Plugins.Sdk.Tests/obj','tests/ClickStitch.Plugins.Host.Tests/bin','tests/ClickStitch.Plugins.Host.Tests/obj','tests/ClickStitch.Plugins.Probe/bin','tests/ClickStitch.Plugins.Probe/obj','samples/ClickStitch.SamplePlugin/bin','samples/ClickStitch.SamplePlugin/obj','tests/ClickStitch.Performance.Tests/bin','tests/ClickStitch.Performance.Tests/obj','tests/ClickStitch.Bench/bin','tests/ClickStitch.Bench/obj'"
 
 run:
 	dotnet run --project $(APP) -c $(CONFIG)

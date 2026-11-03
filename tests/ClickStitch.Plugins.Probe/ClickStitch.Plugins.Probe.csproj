@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>ClickStitch.Plugins.Probe</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <Description>Plugin used by the host tests. It is not the product sample.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ClickStitch.Plugins.Sdk\ClickStitch.Plugins.Sdk.csproj" />
+  </ItemGroup>
+
+</Project>

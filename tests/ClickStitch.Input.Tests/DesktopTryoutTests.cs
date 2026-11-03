@@ -14,6 +14,22 @@ public sealed class DesktopTryoutTests
     }
 
     [Fact]
+    public void Release_clears_a_held_key_without_sending_real_input()
+    {
+        var native = new CapturingNative();
+        var manager = new InputStateManager(new SendInputBatch(native));
+        using var tryout = DesktopTryout.Create(
+            new ExecutionWorker(manager, new DeadlineWait(WaitStrategy.HighResolutionTimer)),
+            new VirtualScreen(0, 0, 1920, 1080),
+            new ScriptedHook());
+
+        OwnershipResult down = manager.KeyDown(InputKey.F13);
+        Assert.Single(down.StillOwned);
+        tryout.ReleaseHeldInputs();
+        Assert.Empty(manager.Snapshot());
+    }
+
+    [Fact]
     public void An_unknown_key_is_refused_before_a_document_is_built()
     {
         Assert.Throws<ArgumentException>(() => DesktopTryout.HoldDocument("NotAKey", 10));

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>ClickStitch.SamplePlugin</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <Description>Sample plugin built against the SDK. It is not referenced by the application.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ClickStitch.Plugins.Sdk\ClickStitch.Plugins.Sdk.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="clickstitch-plugin.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

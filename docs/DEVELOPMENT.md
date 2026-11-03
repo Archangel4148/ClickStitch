@@ -69,7 +69,7 @@ make run
 
 That runs `dotnet run --project src/ClickStitch.App -c Release`.
 
-The window is titled ClickStitch. The tryout can move the pointer, click, hold a key, repeat a click, record the desktop, and play that recording back. Pause, Resume, and Stop are on the window. Pause holds the next action of a playback. Record keeps buttons, keys, and the wheel, and pointer movement when the box is checked. Clicks on the tryout window are left out when recording stops. Play sends that recording as real input. The take stays in memory. The shell does not write settings or a macro file. Closing the window stops the run, uninstalls the hook, and exits the process.
+The window is titled ClickStitch. The tryout can move the pointer, click, hold a key, repeat a click, record the desktop, and play that recording back. Pause, Resume, and Stop are on the window. Pause holds the next action of a playback. Record keeps buttons, keys, and the wheel, and pointer movement when the box is checked. Clicks on the tryout window are left out when recording stops. Play sends that recording as real input. The take stays in memory. The shell does not write settings or a macro file. Closing the window stops the run, uninstalls the hook, shuts plugins down, and exits the process. Startup looks for a `Plugins` folder beside the executable and loads only plugins enabled in settings after the trust warning. A missing folder, a bad settings file, or a plugin that fails to start still opens the window. The first plugin faults are written into the tryout log.
 
 ## Release build
 
@@ -84,7 +84,7 @@ Planned locations, not created by this build:
 
 ## Plugins
 
-Plugin loading is not implemented. A missing `Plugins` directory is the intended steady state until Phase 4. The design is in `docs/PLUGIN_SDK.md`.
+`PluginHost.LoadEnabled` loads an enabled plugin in-process. A missing `Plugins` directory still starts the app. The design is in `docs/PLUGIN_SDK.md`. `samples/ClickStitch.SamplePlugin` is the sample and is not part of the application. `tests/ClickStitch.Plugins.Probe` exists only so the host tests have plugins to load.
 
 ## Dependencies
 

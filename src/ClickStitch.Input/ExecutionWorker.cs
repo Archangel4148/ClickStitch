@@ -204,6 +204,8 @@ internal sealed class ExecutionWorker : IDisposable
         }
     }
 
+    internal void ReleaseOwnedInputs() => Inputs.ReleaseAllOwnedInputs();
+
     internal WorkerEvent[] DrainProgress()
     {
         lock (_progressGate)

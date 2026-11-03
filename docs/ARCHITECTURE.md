@@ -3,7 +3,7 @@
 **Status:** Approved with Phase 0. Phase 1 has not started.  
 **This document does not authorize implementing Phase 1 until that phase is explicitly started.**
 
-The foundation solution builds a WPF shell and a UI-free core library. Input, execution, recording, plugins, and the editor are specified here and are not implemented.
+The foundation solution builds a WPF shell, a UI-free core library, the input engine, a plugin host, and a sample plugin. The shell loads a plugin only after the trust warning is accepted and that plugin is enabled. The editor is specified here and is not implemented.
 
 ## 1. Decision record
 
@@ -38,38 +38,26 @@ Projects that exist now:
 
 | Project | Responsibility |
 |---|---|
-| `ClickStitch.App` | WPF shell. Opens one window. References Core. It also references Input for the temporary tryout panel. |
+| `ClickStitch.App` | WPF shell. Opens one window. References Core, Input for the tryout, and the plugin host. Startup loads enabled plugins and still opens when a plugin fails. |
 | `ClickStitch.Core` | Shared contracts with no UI and no native calls. References no ClickStitch project. |
 | `ClickStitch.Input` | `SendInput` interop, ownership, and the monotonic wait. References no ClickStitch project. |
 | `ClickStitch.Core.Tests` | xUnit tests for Core. |
 | `ClickStitch.Input.Tests` | Layout, submission, coordinates, gestures, ownership, and timing. They do not inject input. |
 | `ClickStitch.Performance.Tests` | Opt-in desktop benchmark. Excluded from the default test run. |
 | `ClickStitch.Bench` | Console runner for that benchmark. `make bench`. Prints progress. Not a test project. |
-
-Projects to add in later phases, and not created now:
-
-| Project | Phase | May reference |
-|---|---|---|
-| `ClickStitch.Execution` | 2 | Core and Input. |
-| `ClickStitch.Recording` | 3 | Core and Input. |
-| `ClickStitch.Plugins.Sdk` | 4 | Core. |
-| `ClickStitch.Plugins.Host` | 4 | Core and the SDK. |
-| `ClickStitch.Execution.Tests`, `ClickStitch.Recording.Tests`, `ClickStitch.Plugins.Host.Tests` | Same phase as the project they test | The project under test. |
+| `ClickStitch.Plugins.Sdk` | Plugin contracts, metadata, and `clickstitch-plugin.json` validation. References Core. |
+| `ClickStitch.Plugins.Host` | Discovers plugin folders and loads a trusted plugin with `Assembly.LoadFrom`. That load is not a sandbox. References Core and the SDK. |
+| `ClickStitch.Plugins.Sdk.Tests` | xUnit tests for the manifest reader. They use JSON text only. |
+| `ClickStitch.Plugins.Host.Tests` | Discovery, API checks, load, shutdown, and action registration. They load the probe assembly. |
+| `ClickStitch.Plugins.Probe` | The plugin those host tests load. It is not the product sample. |
+| `ClickStitch.SamplePlugin` | Sample plugin. References only the SDK. The application does not reference it. |
 
 ```text
 ClickStitch.App
-  └── ClickStitch.Core
-
-ClickStitch.Input
-
-Later:
-
-ClickStitch.App
   ├── ClickStitch.Core
-  ├── ClickStitch.Execution ── ClickStitch.Input
-  ├── ClickStitch.Recording ── ClickStitch.Input
+  ├── ClickStitch.Input
   └── ClickStitch.Plugins.Host
-        ├── ClickStitch.Plugins.Sdk ── ClickStitch.Core
+        ├── ClickStitch.Plugins.Sdk
         └── ClickStitch.Core
 ```
 
@@ -267,7 +255,7 @@ Shutdown order, performed by `InputRuntime` for the pieces that exist:
 2. Cancel the active run.
 3. Release owned inputs. A release Windows does not fully accept stays on the shutdown report, and the worker stays failed.
 4. Unregister hotkeys and dispose the wait timer. A hotkey that cannot be unregistered stays on the report. Recording hooks do not exist yet.
-5. Plugins are not loaded, so there is nothing to shut down.
+5. On exit the shell calls `PluginHost.Shutdown`. That calls `Shutdown` on plugins that finished `Initialize`, in reverse order. One throw is recorded and the rest still run. A plugin that failed to initialize is not called. This input runtime does not call plugin code while it releases keys.
 6. There is no log sink. The report keeps the worker's progress queue, including a dropped-event count. A two-second flush arrives with the sink.
 7. The process is not exited. The shell is not connected to this runtime, so shutdown returns the report to the caller.
 

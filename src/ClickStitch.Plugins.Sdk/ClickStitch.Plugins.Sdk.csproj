@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>ClickStitch.Plugins</RootNamespace>
+    <Description>Plugin contracts and manifest validation. This project does not load plugin assemblies.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ClickStitch.Core\ClickStitch.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ClickStitch.Plugins.Host" />
+  </ItemGroup>
+
+</Project>

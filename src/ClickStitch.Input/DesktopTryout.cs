@@ -174,6 +174,22 @@ public sealed class DesktopTryout : IDisposable
         Append("Stopped. Held inputs were released when Windows accepted the release.");
     }
 
+    /// <summary>
+    /// Asks the engine to release inputs it still owns. A running tryout is stopped, which is the same release path.
+    /// </summary>
+    public void ReleaseHeldInputs()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        WorkerState state = _worker.State;
+        if (state is WorkerState.Running or WorkerState.Paused or WorkerState.Stopping)
+        {
+            Stop();
+            return;
+        }
+
+        _worker.ReleaseOwnedInputs();
+    }
+
     /// <summary>New log lines since the last call. The window timer reads this.</summary>
     public string TakeLog()
     {

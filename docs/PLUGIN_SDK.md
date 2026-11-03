@@ -1,6 +1,6 @@
 # Plugin SDK — Initial Design
 
-**Status:** Design for review. No plugin project, host, or sample is included in Phase 0.
+**Status:** The SDK, host, and sample plugin are implemented. The shell loads a plugin only after the trust warning is accepted and that plugin is enabled. Block descriptors are not registered.
 
 ## Trust
 
@@ -40,7 +40,11 @@ File name: `clickstitch-plugin.json`.
 | `entryAssembly` | Required file name inside the plugin directory. A path that leaves the directory is invalid. |
 | `entryType` | Required type name in that assembly. |
 
-A broken manifest is skipped. The app lists the error and still opens.
+A broken manifest is invalid. `PluginManifests.Read` returns the issues and no manifest. The reader does not open the entry assembly. A document larger than 64 KiB is rejected. Unknown members are errors. `version` is `major.minor.patch` with no leading zeros. `apiVersion` is `major.minor`. An id is two or more reverse-DNS labels, 1–100 characters. A name is 1–120 characters with no surrounding whitespace. `entryAssembly` is a `.dll` file name. A path, including `..`, is invalid. `entryType` is a dotted type name. Duplicate ids are reported by `PluginManifests.DuplicateIds`.
+
+`PluginDiscovery.Discover` reads each subdirectory of a `Plugins` folder. A missing or empty folder returns an empty catalog. A broken manifest, a missing manifest, an incompatible API version, or a duplicate id is recorded and that folder is skipped. The first copy of an id is kept. Discovery does not load an assembly.
+
+`PluginSettingsStore` reads `%LOCALAPPDATA%\ClickStitch\settings.json`. A missing or unreadable file leaves every plugin off and does not create the file. `thirdPartyPluginsAcknowledged` must be true before `Enable` will accept an id. `PluginHost.LoadEnabled` loads only those ids. A disabled plugin stays on disk. The shell uses that path at startup. A plugin that fails to load is recorded, and the window still opens. The first 20 faults are written into the tryout log.
 
 ## API version
 
@@ -79,15 +83,21 @@ public interface IMacroPlugin
 }
 ```
 
-`ICoreHost` in that first milestone can log, report a structured error, and register an action descriptor. Registration after `Initialize` returns throws. A second registration with the same id is rejected.
+`ICoreHost` can log, report a `PluginFault`, register an action, and subscribe to `MacroStarted` or `MacroFinished`. Registration and subscription after `Initialize` returns throw. Unsubscribe may be called later and does nothing if the handler is already gone. A second action with the same id is rejected, that plugin is skipped, and the action it tried to add is not kept. An action id is 1–64 characters, starts with a letter, and uses letters, digits, dots, underscores, or hyphens. The parameter schema is a JSON object of at most 16 KiB. It is not executed. Block descriptors are not registered. Emergency stop is not an event, and a plugin cannot replace it.
 
-Action descriptors carry a stable id, a display name, a description, and a parameter schema. The editor shows plugin actions from those descriptors. Plugin blocks are not hard-coded into the editor.
+```csharp
+host.RegisterAction(descriptor, context =>
+{
+    context.Cancellation.ThrowIfCancellationRequested();
+    context.Report("Sample action ran.");
+});
+```
 
-The host passes a cancellation token into action execution. A plugin that throws is reported, the action fails, and the engine releases inputs it still owns. A plugin that never returns can delay shutdown. That is a documented limit of in-process code. Emergency stop still releases inputs the engine itself submitted, and it does not call the plugin to do so.
+`PluginHost.Execute` passes a cancellation token and a JSON object of arguments. A throw is returned as a failed `PluginCallResult` and recorded as a fault. The host then calls `ReleaseOwnedInputs` when that callback is set. The tryout wires it to the engine, which releases inputs the engine owns. One event handler that throws is recorded the same way, and the later handlers still run. A plugin that never returns can delay the caller. That is a limit of in-process code. Shutdown calls `Shutdown` in reverse order. One plugin that throws during shutdown is recorded, and the rest still run. A plugin that failed `Initialize` is not shut down.
 
 ## Sample
 
-Phase 4 includes a separate sample plugin that registers one action and is developed against this document. The sample is not part of the application project. Phase 0 contains no sample.
+`samples/ClickStitch.SamplePlugin` references only the SDK. It registers `sample.ping`, which reports `Sample action ran.` It does not send input. The application project does not reference it. Copy `clickstitch-plugin.json` and the built DLL into a subdirectory of `Plugins`, accept the trust warning, and enable `com.clickstitch.sample`.
 
 ## What the core does without plugins
 

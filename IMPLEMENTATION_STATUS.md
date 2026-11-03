@@ -1,9 +1,9 @@
 # Implementation Status — ClickStitch
 
-**Project status:** Phase 3 in progress  
-**Current authorized phase:** Phase 3 — Macro Recording  
-**Current authorized milestone:** Phase 3 complete, conversion and save/load, awaiting review  
-**Human approval to proceed:** Milestones 3.7–3.8 were approved when the rest of Phase 3 was authorized. Phase 4 is not started.
+**Project status:** Phase 4 awaiting review  
+**Current authorized phase:** Phase 4 — Plugin SDK and Host  
+**Current authorized milestone:** Phase 4 complete, awaiting review  
+**Human approval to proceed:** Milestones 4.1–4.5 were approved when the rest of Phase 4 was authorized. Phase 5 is not started.
 
 ## Phase status
 
@@ -12,8 +12,8 @@
 | 0 — Requirements, Architecture, Project Foundation | Approved |
 | 1 — Core Windows Input Engine | Approved |
 | 2 — Macro Execution Engine | Approved |
-| 3 — Macro Recording | Awaiting review |
-| 4 — Plugin SDK and Host | Not authorized |
+| 3 — Macro Recording | Approved |
+| 4 — Plugin SDK and Host | Awaiting review |
 | 5 — Application UI and UX | Not authorized |
 | 6 — Hardening and Distribution | Not authorized |
 | 7 — Plugins | Not authorized |
@@ -54,8 +54,9 @@ None from Phase 0.
 - Phase 3.2 — Mouse-button and keyboard capture. Approved when milestones 3.3–3.6 were authorized.
 - Phase 3.3–3.6 — Optional movement, wheel capture, monotonic timestamps, and injected-event filtering. Approved when milestones 3.7–3.8 were authorized.
 - Phase 3.7–3.8 — Sampling, simplification, and raw retention. Approved when the rest of Phase 3 was authorized.
-
-Phase 3 is implemented and is not in the approved list until the phase is approved.
+- Phase 3 — Conversion, save/load, and the record/playback tryout. Approved when Phase 4 was authorized.
+- Phase 4.1 — Plugin manifest validation. Approved when milestones 4.2–4.5 were authorized.
+- Phases 4.2–4.5 — Discovery, API checks, load and shutdown, and action registration. Approved when the rest of Phase 4 was authorized.
 
 ## Outstanding issues
 
@@ -72,11 +73,13 @@ Release build and Debug build of `ClickStitch.sln` succeeded with 0 warnings and
 dotnet test ClickStitch.sln -c Release --settings tests.runsettings
 ```
 
-Passed: 218. Failed: 0. Skipped: 0.  
-`ClickStitch.Core.Tests.dll`: 64 passed in 51 ms.  
-`ClickStitch.Input.Tests.dll`: 153 passed in 828 ms.  
-`ClickStitch.Performance.Tests.dll`: 1 passed in 62 ms. That test does not submit input. The tryout window is not opened by this run.  
-Release, 2 November 2026. The default run does not call `SendInput`, does not register a usable global hotkey, and does not install a low-level hook. The save/load test uses a temporary folder. The record button is covered with a scripted hook.
+Passed: 235. Failed: 0. Skipped: 0.  
+`ClickStitch.Core.Tests.dll`: 64 passed in 102 ms.  
+`ClickStitch.Input.Tests.dll`: 154 passed in 858 ms.  
+`ClickStitch.Plugins.Sdk.Tests.dll`: 6 passed in 20 ms.  
+`ClickStitch.Plugins.Host.Tests.dll`: 10 passed in 723 ms.  
+`ClickStitch.Performance.Tests.dll`: 1 passed in 4 ms. That test does not submit input. The tryout window is not opened by this run.  
+Release, 2 November 2026. The default run does not call `SendInput`, does not register a usable global hotkey, and does not install a low-level hook. The host tests load the probe and the sample plugin from a temporary folder. The save/load test uses a temporary folder. The record button is covered with a scripted hook.
 
 `make bench` was run the same evening on the Ryzen 7 7800X3D, Windows 11 build 26200.9711, .NET 10.0.14, Release. The product wait is hybrid. The table is in `docs/TESTING.md`.
 
@@ -116,3 +119,6 @@ None. The foundation targets .NET 10, which is the current long-term support rel
 - Milestones 3.7–3.8 thin movement after the recording stops. The raw list stays in memory, and revert discards the shorter copy. No file is written.
 - Phase 3 closes with conversion of a recording into a format-1 macro, save and load of that file, and replay through the existing runner.
 - The tryout window can record one take and play it back. The take stays in memory. Clicks on the window are left out. Pause now reaches the playback. The default tests use a scripted hook.
+- Phase 3 approved. Phase 4 authorized. Milestone 4.1 adds `ClickStitch.Plugins.Sdk`. It validates `clickstitch-plugin.json` and reports a duplicate id. It does not discover a folder or load an assembly.
+- Milestones 4.2–4.5 add discovery, the API check on that catalog, in-process load and shutdown, and action registration during `Initialize`. The shell discovers a Plugins folder and does not load it. The probe is a test plugin, not the product sample.
+- Phase 4 closes with event subscription, enable and disable behind the trust warning, action execution, failure reporting, and `samples/ClickStitch.SamplePlugin`. A plugin exception is recorded. The host asks the engine to release inputs it still owns. Startup still opens the window.

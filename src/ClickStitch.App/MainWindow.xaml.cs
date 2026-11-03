@@ -23,6 +23,12 @@ public partial class MainWindow : Window
         Heading.Text = "ClickStitch";
         ApplyHighContrast();
         _tryout = DesktopTryout.Create();
+        if (Application.Current is App app)
+        {
+            app.PluginRuntime.ReleaseOwnedInputs = ReleaseAfterPluginFailure;
+            NotePluginFaults(app.PluginRuntime.Faults);
+        }
+
         _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
         _timer.Tick += (_, _) => Refresh();
         _timer.Start();
@@ -178,6 +184,34 @@ public partial class MainWindow : Window
         Note($"{label} must be a whole number from {minimum} through {maximum}.");
         value = 0;
         return false;
+    }
+
+    private void ReleaseAfterPluginFailure()
+    {
+        try
+        {
+            _tryout.ReleaseHeldInputs();
+        }
+        catch (Exception error)
+        {
+            Note("Owned inputs could not be released. " + error.Message);
+        }
+    }
+
+    private void NotePluginFaults(IReadOnlyList<ClickStitch.Plugins.PluginFault> faults)
+    {
+        int noted = 0;
+        foreach (ClickStitch.Plugins.PluginFault fault in faults)
+        {
+            if (noted == 20)
+            {
+                Note("More plugin faults were recorded.");
+                return;
+            }
+
+            Note(fault.Source + ": " + fault.Message);
+            noted++;
+        }
     }
 
     private void Note(string message)

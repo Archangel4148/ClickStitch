@@ -34,7 +34,7 @@ A first-run experience should include a sample macro and a clear explanation of 
 
 ## Status
 
-**Phase 3 is awaiting review.** A recording can become a macro and replay through the runner. `make run` opens the tryout, which can record the desktop and play that take back. See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
+**Phase 4 is awaiting review.** Trusted plugins can be enabled, loaded, and shut down. A plugin failure is recorded and does not close the app. The sample plugin is `samples/ClickStitch.SamplePlugin`. See [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
 Update this section as phases are approved and finished. The authoritative record is [`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md).
 
@@ -43,8 +43,8 @@ Update this section as phases are approved and finished. The authoritative recor
 | 0 | Requirements, architecture, and project foundation | Approved |
 | 1 | Windows input engine | Approved |
 | 2 | Macro execution | Approved |
-| 3 | Macro recording | Awaiting review |
-| 4 | Plugin SDK and host | Not authorized |
+| 3 | Macro recording | Approved |
+| 4 | Plugin SDK and host | Awaiting review |
 | 5 | Application UI | Not authorized |
 | 6 | Hardening and distribution | Not authorized |
 | 7 | Plugins | Not authorized |

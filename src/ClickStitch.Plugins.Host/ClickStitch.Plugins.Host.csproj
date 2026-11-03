@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>ClickStitch.Plugins</RootNamespace>
+    <Description>Finds plugin folders and loads trusted in-process plugins. Loading is not a security sandbox.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ClickStitch.Core\ClickStitch.Core.csproj" />
+    <ProjectReference Include="..\ClickStitch.Plugins.Sdk\ClickStitch.Plugins.Sdk.csproj" />
+  </ItemGroup>
+
+</Project>
