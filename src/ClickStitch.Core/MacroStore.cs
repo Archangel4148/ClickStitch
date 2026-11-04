@@ -24,6 +24,9 @@ public static class MacroStore
         return Path.Combine(documents, "ClickStitch");
     }
 
+    /// <summary>Recordings saved by the Record page. They are not listed with the macros.</summary>
+    public static string RecordingsDirectory() => Path.Combine(DefaultDirectory(), "Recordings");
+
     /// <summary>
     /// Writes <paramref name="document"/> into <paramref name="directory"/> and returns the full path.
     /// An older file in that directory with the same macro id is removed.

@@ -55,7 +55,7 @@ public sealed class RecordingCompilerTests
         Assert.Equal(MacroMouseButton.Left, click.Button);
         Assert.Equal(MacroCoordinateMode.Cursor, click.Mode);
         Assert.Equal(1, click.ClickCount);
-        Assert.Equal(RecordingTime.ElapsedMilliseconds(up, key), ((WaitAction)recorded.Document.Actions[3]).DurationMs);
+        Assert.Equal(RecordingTime.ElapsedMilliseconds(down, key), ((WaitAction)recorded.Document.Actions[3]).DurationMs);
         Assert.Equal("A", ((KeyboardKeyAction)recorded.Document.Actions[4]).Key);
         Assert.Equal(MacroPressState.Down, ((KeyboardKeyAction)recorded.Document.Actions[4]).State);
         Assert.Equal(MacroPressState.Up, ((KeyboardKeyAction)recorded.Document.Actions[6]).State);
@@ -187,7 +187,9 @@ public sealed class RecordingCompilerTests
         MacroRunResult result = MacroRunner.Run(contract, executor);
 
         Assert.Equal(MacroRunStatus.Completed, result.Status);
-        Assert.Equal([RecordingTime.ElapsedMilliseconds(0, down)], waits);
+        Assert.Equal(
+            [RecordingTime.ElapsedMilliseconds(0, down), RecordingTime.ElapsedMilliseconds(down, up)],
+            waits);
         Assert.Equal(3, native.Calls);
         Assert.Equal(120u, native.Packets[^1].Data.Mouse.mouseData);
         Assert.Empty(manager.Snapshot());

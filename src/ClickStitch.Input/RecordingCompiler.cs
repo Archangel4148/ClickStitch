@@ -24,6 +24,7 @@ internal sealed class RecordedDocument
 /// <summary>
 /// Turns captured samples into a format-1 macro. The raw list is not changed.
 /// A down immediately followed by the same button's up becomes one click.
+/// The time until that release stays in the gap before the next action, so playback keeps the original length.
 /// Anything between them becomes a hold. Waits come from the monotonic timestamps.
 /// </summary>
 internal static class RecordingCompiler
@@ -66,7 +67,6 @@ internal static class RecordingCompiler
                         drafts.Add(Draft.Click(current.Button));
                         emittedButton = true;
                     });
-                    lastStamp = events[match].Timestamp;
                     index = match;
                     continue;
                 }

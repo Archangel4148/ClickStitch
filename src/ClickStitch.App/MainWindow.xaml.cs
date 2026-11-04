@@ -100,6 +100,8 @@ public partial class MainWindow : Window
 
     private void OpenRecord_Click(object sender, RoutedEventArgs e) => Show("record");
 
+    private void OpenLog_Click(object sender, RoutedEventArgs e) => Show("log");
+
     private void Editor_Click(object sender, RoutedEventArgs e) => Show("editor");
 
     private void Library_Click(object sender, RoutedEventArgs e) => Show("library");
@@ -209,6 +211,7 @@ public partial class MainWindow : Window
         bool macros = page is "library" or "editor" or "run";
         ClickPage.Visibility = page == "click" ? Visibility.Visible : Visibility.Collapsed;
         RecordPage.Visibility = page == "record" ? Visibility.Visible : Visibility.Collapsed;
+        LogPage.Visibility = page == "log" ? Visibility.Visible : Visibility.Collapsed;
         EditorPage.Visibility = page == "editor" ? Visibility.Visible : Visibility.Collapsed;
         LibraryPage.Visibility = page == "library" ? Visibility.Visible : Visibility.Collapsed;
         RunPage.Visibility = page == "run" ? Visibility.Visible : Visibility.Collapsed;
@@ -218,6 +221,7 @@ public partial class MainWindow : Window
         Mark(ClickButton, page == "click");
         Mark(MacrosButton, macros);
         Mark(RecordButton, page == "record");
+        Mark(LogButton, page == "log");
         Mark(PluginsButton, page == "plugins");
         Mark(SettingsButton, page == "settings");
         Mark(EditorButton, page == "editor");
@@ -232,6 +236,11 @@ public partial class MainWindow : Window
         if (page == "run")
         {
             ShowRun();
+        }
+
+        if (page == "record")
+        {
+            FillRecordings();
         }
 
         if (page == "plugins")
@@ -265,13 +274,25 @@ public partial class MainWindow : Window
 
     private void Record_Click(object sender, RoutedEventArgs e) => _tryout.StartRecording(MovementBox.IsChecked == true);
 
-    private void StopRecording_Click(object sender, RoutedEventArgs e)
-    {
-        WindowPixels(out int left, out int top, out int width, out int height);
-        _tryout.StopRecording(left, top, width, height);
-    }
+    private void StopRecording_Click(object sender, RoutedEventArgs e) => FinishRecording();
 
-    private void Play_Click(object sender, RoutedEventArgs e) => _tryout.PlayRecording();
+    private void Play_Click(object sender, RoutedEventArgs e)
+    {
+        if (_tryout.RecordingJson is not null)
+        {
+            _tryout.PlayRecording();
+            return;
+        }
+
+        MacroFile? newest = NewestRecording();
+        if (newest is null)
+        {
+            _tryout.PlayRecording();
+            return;
+        }
+
+        PlaySaved(newest);
+    }
 
     private void Pause_Click(object sender, RoutedEventArgs e) => _tryout.Pause();
 
@@ -281,8 +302,7 @@ public partial class MainWindow : Window
     {
         if (_tryout.IsRecording)
         {
-            WindowPixels(out int left, out int top, out int width, out int height);
-            _tryout.StopRecording(left, top, width, height);
+            FinishRecording();
         }
 
         _tryout.Stop();

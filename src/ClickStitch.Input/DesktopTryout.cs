@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 using ClickStitch.Core;
@@ -19,6 +20,16 @@ public sealed class DesktopTryout : IDisposable
     private readonly StringBuilder _log = new();
     private RecordingCapture? _capture;
     private string? _recordingJson;
+
+    /// <summary>The latest recording as format-1 JSON, or null when there is nothing to play.</summary>
+    public string? RecordingJson
+    {
+        get
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            return _recordingJson;
+        }
+    }
     private Stopwatch? _runClock;
     private bool _disposed;
 
@@ -125,7 +136,9 @@ public sealed class DesktopTryout : IDisposable
             _capture.OmitInside(windowLeft, windowTop, windowLeft + windowWidth, windowTop + windowHeight);
         }
 
-        RecordedDocument recorded = _capture.ToDocument("Tryout recording", "tryout-recording");
+        string name = "Recording " + DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss", CultureInfo.InvariantCulture);
+        string id = "r" + Guid.NewGuid().ToString("N");
+        RecordedDocument recorded = _capture.ToDocument(name, id);
         foreach (string notice in recorded.Notices)
         {
             Append(notice);

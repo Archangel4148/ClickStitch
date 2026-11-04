@@ -79,6 +79,9 @@
           <Button x:Name="RecordButton" Margin="4,0,0,0" Style="{StaticResource NavButton}" Click="OpenRecord_Click" AutomationProperties.Name="Record">
             <AccessText Text="_Record" />
           </Button>
+          <Button x:Name="LogButton" Margin="4,0,0,0" Style="{StaticResource NavButton}" Click="OpenLog_Click" AutomationProperties.Name="Log">
+            <AccessText Text="_Log" />
+          </Button>
           <Button x:Name="PluginsButton" Margin="4,0,0,0" Style="{StaticResource NavButton}" Click="Plugins_Click" AutomationProperties.Name="Plugins">
             <AccessText Text="_Plugins" />
           </Button>
@@ -334,7 +337,7 @@
             <TextBlock Margin="0,8,0,0"
                        Foreground="{DynamicResource MutedBrush}"
                        TextWrapping="Wrap"
-                       Text="Record keeps clicks, keys, and the wheel. Play sends that recording as real input. Clicks on this window are left out. The take stays in memory." />
+                       Text="Record keeps clicks, keys, and the wheel. Play sends that recording as real input. Clicks on this window are left out. Each take is saved on this PC." />
             <CheckBox x:Name="MovementBox" Margin="0,16,0,0" Content="Include pointer movement" IsChecked="True" />
             <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
               <Button Content="Record" MinHeight="44" Padding="16,8" Click="Record_Click" />
@@ -345,15 +348,38 @@
               <Button Content="Pause" MinHeight="40" Padding="14,8" Click="Pause_Click" />
               <Button Content="Resume" Margin="8,0,0,0" MinHeight="40" Padding="14,8" Click="Resume_Click" />
             </StackPanel>
-            <TextBlock Margin="0,16,0,0" FontWeight="SemiBold" Text="What happened" />
+            <TextBlock Margin="0,16,0,6" Style="{StaticResource FieldLabel}" Text="Recordings" />
+            <TextBlock x:Name="RecordingEmpty"
+                       Foreground="{DynamicResource MutedBrush}"
+                       Text="No recordings yet."
+                       Visibility="Collapsed" />
+            <ScrollViewer MaxHeight="220" VerticalScrollBarVisibility="Auto">
+              <StackPanel x:Name="RecordingList" />
+            </ScrollViewer>
+            <StackPanel x:Name="RecordingConfirm" Margin="0,8,0,0" Visibility="Collapsed">
+              <TextBlock x:Name="RecordingConfirmText" TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                <Button Content="Delete" MinWidth="72" Click="DeleteRecording_Click" AutomationProperties.Name="Delete this recording" />
+                <Button Content="Keep" Margin="8,0,0,0" MinWidth="72" Click="KeepRecording_Click" />
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
+
+          <StackPanel x:Name="LogPage" Visibility="Collapsed">
+            <TextBlock FontSize="20" FontWeight="SemiBold" Text="Log" />
+            <TextBlock Margin="0,8,0,0"
+                       Foreground="{DynamicResource MutedBrush}"
+                       TextWrapping="Wrap"
+                       Text="Notes from recording and playback. This is not the recording." />
             <TextBox x:Name="LogBox"
-                     Margin="0,8,0,0"
+                     Margin="0,12,0,0"
                      IsReadOnly="True"
                      TextWrapping="Wrap"
                      VerticalScrollBarVisibility="Auto"
+                     VerticalContentAlignment="Top"
                      AcceptsReturn="True"
-                     MinHeight="160"
-                     FontSize="14" />
+                     Height="240"
+                     FontSize="13" />
           </StackPanel>
 
           <StackPanel x:Name="EditorPage" Visibility="Collapsed">

@@ -233,7 +233,10 @@
                     BorderThickness="{TemplateBinding BorderThickness}"
                     Padding="{TemplateBinding Padding}"
                     SnapsToDevicePixels="True">
-              <ScrollViewer x:Name="PART_ContentHost" Focusable="False" />
+              <ScrollViewer x:Name="PART_ContentHost"
+                            Focusable="False"
+                            HorizontalScrollBarVisibility="{TemplateBinding HorizontalScrollBarVisibility}"
+                            VerticalScrollBarVisibility="{TemplateBinding VerticalScrollBarVisibility}" />
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsKeyboardFocused" Value="True">

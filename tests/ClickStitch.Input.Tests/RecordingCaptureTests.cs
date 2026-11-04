@@ -377,6 +377,29 @@ public sealed class RecordingCaptureTests
         Assert.Equal(7, recorded.Timestamp);
     }
 
+    [Fact]
+    public void Left_and_right_shift_control_and_alt_use_the_generic_keys()
+    {
+        AssertDecoded(0xA0, InputKey.Shift);
+        AssertDecoded(0xA1, InputKey.Shift);
+        AssertDecoded(0xA2, InputKey.Control);
+        AssertDecoded(0xA3, InputKey.Control);
+        AssertDecoded(0xA4, InputKey.Alt);
+        AssertDecoded(0xA5, InputKey.Alt);
+    }
+
+    private static void AssertDecoded(uint virtualKey, InputKey expected)
+    {
+        bool decoded = RecordingDecoder.TryDecode(
+            new HookSample(RecordingDecoder.KeyDown, virtualKey, false, 1),
+            RecordingOptions.Default,
+            out RecordedEvent recorded);
+
+        Assert.True(decoded);
+        Assert.Equal(expected, recorded.Key);
+        Assert.True(recorded.Down);
+    }
+
     private sealed class ScriptedHook : IRecordingHook
     {
         internal Action<HookSample>? Callback;

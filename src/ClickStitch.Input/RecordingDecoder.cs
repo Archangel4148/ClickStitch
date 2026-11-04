@@ -103,6 +103,14 @@ internal static class RecordingDecoder
             keys[InputKeys.Describe(key).VirtualKey] = key;
         }
 
+        // The low-level hook reports the left or right key, not the generic one.
+        keys[0xA0] = InputKey.Shift;
+        keys[0xA1] = InputKey.Shift;
+        keys[0xA2] = InputKey.Control;
+        keys[0xA3] = InputKey.Control;
+        keys[0xA4] = InputKey.Alt;
+        keys[0xA5] = InputKey.Alt;
+
         return keys;
     }
 }
