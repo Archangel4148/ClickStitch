@@ -74,9 +74,9 @@ Test with people unfamiliar with the project. Observe whether they can create, s
 
 ## Design system
 
-The shell uses the navy and violet from `assets/clickstitch_icon_rounded.png`. Light and dark are both applied. Text, muted labels, the accent, and Stop each stay readable against the surface behind them.
+The shell uses the navy and violet from `assets/clickstitch_icon_rounded.png`. The window background is a short gradient between two close shades of that navy or lavender, so text still clears the lighter end. Start uses a violet gradient. Light and dark are both applied. Text, muted labels, and Stop each stay readable against the surface behind them.
 
-Personality stays friendly, calm, and specific. Charm comes from spacing, type, and one accent. Gradients, glow, and heavy shadows are out.
+Personality stays calm and specific. The shell is square: controls have no corner radius, and the window opens at the size of the Click page. Charm comes from type, alignment, and one accent. Glow and heavy shadows are out.
 
 ### Color
 
@@ -129,16 +129,15 @@ Segoe UI Variable, with Segoe UI as the fallback. Both ship with Windows 11.
 
 | Role | Size | Weight |
 |---|---|---|
-| Window title in the shell | 32 | Semibold |
 | Section | 20 | Semibold |
-| Body | 16 | Regular |
-| Label | 13 | Regular |
+| Body | 13 | Regular |
+| Label | 12 | Regular |
 
-Body text is at least 16px. The user can scale Windows text, and layouts have to allow it.
+The shell body is 13px so the Click page can sit in a small window. The user can still scale Windows text, and layouts have to allow it.
 
 ### Space, shape, and controls
 
-The spacing step is 4px: 8, 12, 16, 24, 32, 48. Cards use a 12px corner radius. Controls use 8px. The default control height is 36px. A primary or stop control is at least 44px tall. Icons sit on a 20px grid, with a stroke near 1.75px and round caps.
+The spacing step is 4px: 8, 12, 16. Controls are square. Scrollbars are a 10px theme thumb drawn over the page, muted until the pointer is on them. The default control height is 34px. Start is 40px. Stop sits in the bottom bar at 32px. Choices that used to be separate radio buttons are one segmented row, with a Segoe MDL2 icon beside the label. Icons are not the only label.
 
 The application mark is `assets/clickstitch_icon_rounded.png`. The window shows that icon in its own title bar and does not use the system caption.
 
@@ -157,4 +156,4 @@ State changes use about 120ms. Emergency stop, press feedback, and execution-sta
 
 ### Foundation window
 
-The shell opens on Click. That page sets a point, a gap, and a repeat, then starts. It sends real input. Macros, Record, Plugins, and Settings are the other tabs. Inside Macros, Library, Editor, and Run stay available. The editor does not send input. Record and Run do. Stop stays visible.
+The shell opens on Click. That page chooses one button or key, then either holds it or repeats it. The default place is the pointer. A point, a count, and a toggle shortcut are on the same page. Macros, Record, Plugins, and Settings are the other tabs. The editor does not send input. Record and Run do. Stop stays visible.

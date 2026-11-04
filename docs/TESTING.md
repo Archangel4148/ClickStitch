@@ -229,6 +229,19 @@ Result on 2 November 2026: **235 passed, 0 failed, 0 skipped.**
 
 A failed action is returned and does not throw. The release callback runs, and the next action still runs. One event handler that throws does not stop the next handler. One shutdown that throws does not stop the plugins shut down after it. A plugin stays unloaded until the trust warning is accepted and its id is enabled. A broken settings file leaves plugins off. The sample plugin's `sample.ping` action reports `Sample action ran.` A held F13 on the tryout stand-in is released without calling the real `SendInput`. These tests do not register a hotkey or install a hook.
 
+## Click page automated result
+
+Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings`
+Result on 3 November 2026: **258 passed, 0 failed, 0 skipped.**
+
+- `ClickStitch.Core.Tests.dll`: 77 passed, duration 172 ms.
+- `ClickStitch.Input.Tests.dll`: 162 passed, duration 876 ms.
+- `ClickStitch.Plugins.Sdk.Tests.dll`: 6 passed, duration 186 ms.
+- `ClickStitch.Plugins.Host.Tests.dll`: 12 passed, duration 780 ms.
+- `ClickStitch.Performance.Tests.dll`: 1 passed, duration 232 ms. This test does not submit input.
+
+The new input tests read the click document. A cursor click has no point. Hold is a down plus a wait, not a release. A bare letter is not a shortcut. None of these tests call `SendInput` or `RegisterHotKey`.
+
 ## Phase 5.5 automated result
 
 Command: `dotnet test ClickStitch.sln -c Release --settings tests.runsettings`

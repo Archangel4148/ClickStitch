@@ -15,9 +15,9 @@ public enum AppAppearance
 /// <summary>Which plugins may load, and how the shell looks. Enabling a plugin requires the trust warning.</summary>
 public sealed class PluginSettings
 {
-    public static PluginSettings Off { get; } = new(false, [], AppAppearance.System);
+    public static PluginSettings Off { get; } = new(false, [], AppAppearance.System, null);
 
-    private PluginSettings(bool thirdPartyPluginsAcknowledged, IReadOnlyList<string> enabledIds, AppAppearance appearance)
+    private PluginSettings(bool thirdPartyPluginsAcknowledged, IReadOnlyList<string> enabledIds, AppAppearance appearance, string? toggleHotkey)
     {
         if (!Enum.IsDefined(appearance))
         {
@@ -27,6 +27,7 @@ public sealed class PluginSettings
         ThirdPartyPluginsAcknowledged = thirdPartyPluginsAcknowledged;
         EnabledIds = enabledIds;
         Appearance = appearance;
+        ToggleHotkey = string.IsNullOrWhiteSpace(toggleHotkey) ? null : toggleHotkey.Trim();
     }
 
     public bool ThirdPartyPluginsAcknowledged { get; }
@@ -35,11 +36,16 @@ public sealed class PluginSettings
 
     public AppAppearance Appearance { get; }
 
-    public PluginSettings Acknowledge() => new(true, EnabledIds, Appearance);
+    /// <summary>The clicker toggle, such as F6 or Ctrl+F6. Null when the user has not set one.</summary>
+    public string? ToggleHotkey { get; }
 
-    public PluginSettings RevokeTrust() => new(false, EnabledIds, Appearance);
+    public PluginSettings Acknowledge() => new(true, EnabledIds, Appearance, ToggleHotkey);
 
-    public PluginSettings WithAppearance(AppAppearance appearance) => new(ThirdPartyPluginsAcknowledged, EnabledIds, appearance);
+    public PluginSettings RevokeTrust() => new(false, EnabledIds, Appearance, ToggleHotkey);
+
+    public PluginSettings WithAppearance(AppAppearance appearance) => new(ThirdPartyPluginsAcknowledged, EnabledIds, appearance, ToggleHotkey);
+
+    public PluginSettings WithToggleHotkey(string? chord) => new(ThirdPartyPluginsAcknowledged, EnabledIds, Appearance, chord);
 
     public PluginSettings Enable(string pluginId)
     {
@@ -59,7 +65,7 @@ public sealed class PluginSettings
         }
 
         var ids = new List<string>(EnabledIds) { pluginId };
-        return new PluginSettings(true, ids, Appearance);
+        return new PluginSettings(true, ids, Appearance, ToggleHotkey);
     }
 
     public PluginSettings Disable(string pluginId)
@@ -70,11 +76,11 @@ public sealed class PluginSettings
             return this;
         }
 
-        return new PluginSettings(ThirdPartyPluginsAcknowledged, EnabledIds.Where(id => id != pluginId).ToArray(), Appearance);
+        return new PluginSettings(ThirdPartyPluginsAcknowledged, EnabledIds.Where(id => id != pluginId).ToArray(), Appearance, ToggleHotkey);
     }
 
-    internal static PluginSettings FromFile(bool acknowledged, IReadOnlyList<string> enabledIds, AppAppearance appearance) =>
-        new(acknowledged, enabledIds, appearance);
+    internal static PluginSettings FromFile(bool acknowledged, IReadOnlyList<string> enabledIds, AppAppearance appearance, string? toggleHotkey) =>
+        new(acknowledged, enabledIds, appearance, toggleHotkey);
 }
 
 /// <summary>A settings read. A fault means the file was ignored and plugins stay off.</summary>
@@ -155,6 +161,11 @@ public static class PluginSettingsStore
             }
 
             writer.WriteEndArray();
+            if (settings.ToggleHotkey is not null)
+            {
+                writer.WriteString("toggleHotkey", settings.ToggleHotkey);
+            }
+
             writer.WriteEndObject();
         }
 
@@ -180,7 +191,7 @@ public static class PluginSettingsStore
 
         foreach (string name in document.Select(member => member.Key))
         {
-            if (name is not "thirdPartyPluginsAcknowledged" and not "enabledPluginIds" and not "appearance")
+            if (name is not "thirdPartyPluginsAcknowledged" and not "enabledPluginIds" and not "appearance" and not "toggleHotkey")
             {
                 return Ignored("Unknown settings member '" + name + "'.");
             }
@@ -223,7 +234,24 @@ public static class PluginSettingsStore
             }
         }
 
-        return new PluginSettingsLoad(PluginSettings.FromFile(acknowledged, enabled, appearance), null);
+        string? hotkey = null;
+        if (document.ContainsKey("toggleHotkey"))
+        {
+            if (document["toggleHotkey"] is not JsonValue hotkeyValue || !hotkeyValue.TryGetValue(out string? hotkeyText))
+            {
+                return Ignored("toggleHotkey must be text, such as F6 or Ctrl+F6.");
+            }
+
+            hotkeyText = hotkeyText.Trim();
+            if (hotkeyText.Length > 48 || hotkeyText.Contains(' ') || hotkeyText.Contains('"'))
+            {
+                return Ignored("toggleHotkey must be a short shortcut, such as F6 or Ctrl+F6.");
+            }
+
+            hotkey = hotkeyText.Length == 0 ? null : hotkeyText;
+        }
+
+        return new PluginSettingsLoad(PluginSettings.FromFile(acknowledged, enabled, appearance, hotkey), null);
     }
 
     private static string AppearanceName(AppAppearance appearance) => appearance switch

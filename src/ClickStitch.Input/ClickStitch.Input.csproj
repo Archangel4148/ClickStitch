@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net10.0-windows10.0.22000.0</TargetFramework>
     <RootNamespace>ClickStitch.Input</RootNamespace>
-    <Description>Windows input and the macro executor. The application project does not reference this project.</Description>
+    <Description>Windows input and the macro executor. The shell references this project for Click, Record, and Run.</Description>
   </PropertyGroup>
 
   <ItemGroup>

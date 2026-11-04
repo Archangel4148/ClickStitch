@@ -1,5 +1,9 @@
 ﻿using System.IO;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Media;
 using ClickStitch.Plugins;
 
 namespace ClickStitch;
@@ -27,6 +31,7 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        EventManager.RegisterClassHandler(typeof(ComboBox), UIElement.PreviewMouseLeftButtonDownEvent, new MouseButtonEventHandler(OpenComboFromItsBody));
         try
         {
             Plugins = PluginDiscovery.Discover(Path.Combine(AppContext.BaseDirectory, PluginDiscovery.DirectoryName));
@@ -43,6 +48,32 @@ public partial class App : Application
 
         ShellTheme.Apply(this, Settings.Appearance);
         base.OnStartup(e);
+    }
+
+    private static void OpenComboFromItsBody(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not ComboBox box || box.IsEditable || e.OriginalSource is not DependencyObject source || IsComboToggle(source))
+        {
+            return;
+        }
+
+        box.IsDropDownOpen = !box.IsDropDownOpen;
+        e.Handled = true;
+    }
+
+    private static bool IsComboToggle(DependencyObject source)
+    {
+        while (source is not null)
+        {
+            if (source is ToggleButton)
+            {
+                return true;
+            }
+
+            source = VisualTreeHelper.GetParent(source) ?? LogicalTreeHelper.GetParent(source);
+        }
+
+        return false;
     }
 
     protected override void OnExit(ExitEventArgs e)

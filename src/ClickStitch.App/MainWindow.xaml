@@ -3,24 +3,24 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         Title="ClickStitch"
-        Width="920"
-        Height="820"
-        MinWidth="720"
-        MinHeight="560"
+        Width="448"
+        SizeToContent="Height"
+        MinWidth="400"
+        MinHeight="360"
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"
         ResizeMode="CanResize"
         Background="{DynamicResource PaperBrush}"
         Foreground="{DynamicResource InkBrush}"
-        FontFamily="Segoe UI Variable, Segoe UI"
-        FontSize="16"
+        FontFamily="Segoe UI Variable Text, Segoe UI Variable, Segoe UI"
+        FontSize="13"
         Icon="Assets/clickstitch_icon_rounded.png"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True"
         TextOptions.TextFormattingMode="Display"
         StateChanged="Window_StateChanged">
   <shell:WindowChrome.WindowChrome>
-    <shell:WindowChrome CaptionHeight="48"
+    <shell:WindowChrome CaptionHeight="40"
                         ResizeBorderThickness="6"
                         GlassFrameThickness="0"
                         CornerRadius="0"
@@ -31,7 +31,7 @@
           BorderBrush="{DynamicResource LineBrush}"
           BorderThickness="1">
     <DockPanel>
-      <Grid DockPanel.Dock="Top" Height="48">
+      <Grid DockPanel.Dock="Top" Height="40">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="Auto" />
           <ColumnDefinition Width="*" />
@@ -68,7 +68,7 @@
         </StackPanel>
       </Grid>
 
-      <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1" Padding="12,8">
+      <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1" Padding="8,0,8,0">
         <StackPanel Orientation="Horizontal">
           <Button x:Name="ClickButton" Style="{StaticResource NavButton}" Click="ClickPage_Click" AutomationProperties.Name="Click">
             <AccessText Text="_Click" />
@@ -93,7 +93,7 @@
               Visibility="Collapsed"
               BorderBrush="{DynamicResource LineBrush}"
               BorderThickness="0,0,0,1"
-              Padding="12,8">
+              Padding="12,6">
         <StackPanel Orientation="Horizontal">
           <Button x:Name="LibraryButton" Style="{StaticResource NavButton}" Click="Library_Click" AutomationProperties.Name="Library">
             <AccessText Text="_Library" />
@@ -114,106 +114,219 @@
               Background="{DynamicResource CardBrush}"
               BorderBrush="{DynamicResource LineBrush}"
               BorderThickness="0,1,0,0"
-              Padding="16,12">
+              Padding="12,8">
         <DockPanel>
           <Button x:Name="StopButton"
                   DockPanel.Dock="Right"
-                  Content="Stop"
-                  MinWidth="120"
-                  MinHeight="48"
-                  Padding="16,8"
+                  MinWidth="88"
+                  MinHeight="32"
+                  Padding="12,4"
                   FontWeight="SemiBold"
                   Background="{DynamicResource StopBrush}"
                   Foreground="{DynamicResource StopTextBrush}"
                   BorderBrush="{DynamicResource StopBrush}"
                   AutomationProperties.Name="Stop. Ends the run and releases held keys."
-                  Click="Stop_Click" />
-          <StackPanel VerticalAlignment="Center">
-            <TextBlock Text="State" FontSize="13" Foreground="{DynamicResource MutedBrush}" />
-            <TextBlock x:Name="StatusText" FontWeight="SemiBold" Text="Idle" />
-          </StackPanel>
+                  Click="Stop_Click">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <Viewbox Width="12" Height="12" Margin="0,0,8,0" VerticalAlignment="Center">
+                <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="16" Text="&#xE71A;" />
+              </Viewbox>
+              <TextBlock VerticalAlignment="Center" Text="Stop" />
+            </StackPanel>
+          </Button>
+          <TextBlock x:Name="StatusText" VerticalAlignment="Center" FontWeight="SemiBold" Text="Idle" />
         </DockPanel>
       </Border>
 
-      <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20,16,24,16">
+      <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,14,16,12">
         <Grid>
           <StackPanel x:Name="ClickPage">
-            <TextBlock FontSize="20" FontWeight="SemiBold" Text="Click" />
-            <TextBlock Margin="0,8,0,0"
-                       Foreground="{DynamicResource MutedBrush}"
-                       TextWrapping="Wrap"
-                       Text="Start sends real clicks to the point below. Aim at an empty spot, not this window. Stop stays at the bottom and ends a run." />
-            <Grid Margin="0,16,0,0">
+            <TextBlock Style="{StaticResource FieldLabel}" Text="Button or key" />
+            <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="12" />
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="Auto" />
               </Grid.ColumnDefinitions>
-              <Border Style="{StaticResource Panel}">
-                <StackPanel>
-                  <TextBlock FontWeight="SemiBold" Text="Interval" />
-                  <TextBlock Margin="0,8,0,0" FontSize="13" Foreground="{DynamicResource MutedBrush}" Text="Gap between rounds" />
-                  <DockPanel Margin="0,8,0,0">
-                    <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" VerticalAlignment="Center" Text="milliseconds" />
-                    <TextBox x:Name="GapBox" Text="200" />
-                  </DockPanel>
-                </StackPanel>
+              <Border x:Name="TargetFace"
+                      Background="{DynamicResource FieldBrush}"
+                      BorderBrush="{DynamicResource LineBrush}"
+                      BorderThickness="1"
+                      MinHeight="34"
+                      Cursor="Hand"
+                      MouseLeftButtonDown="TargetFace_Click">
+                <DockPanel>
+                  <Border DockPanel.Dock="Right"
+                          Width="32"
+                          IsHitTestVisible="False"
+                          AutomationProperties.Name="Open the button and key list">
+                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="12" Text="&#xE70D;" />
+                  </Border>
+                  <TextBlock x:Name="TargetGlyph"
+                             Width="16"
+                             Margin="10,0,0,0"
+                             VerticalAlignment="Center"
+                             FontFamily="Segoe MDL2 Assets"
+                             FontSize="14"
+                             Text="&#xE962;" />
+                  <TextBlock x:Name="TargetLabel" Margin="8,0,0,0" VerticalAlignment="Center" Text="Left button" />
+                </DockPanel>
               </Border>
-              <Border Grid.Column="2" Style="{StaticResource Panel}">
-                <StackPanel>
-                  <TextBlock FontWeight="SemiBold" Text="Repeat" />
-                  <TextBlock Margin="0,8,0,0" FontSize="13" Foreground="{DynamicResource MutedBrush}" Text="Clicks in a burst, then how many rounds" />
-                  <Grid Margin="0,8,0,0">
+              <Popup x:Name="TargetPopup"
+                     PlacementTarget="{Binding ElementName=TargetFace}"
+                     Placement="Bottom"
+                     StaysOpen="False"
+                     AllowsTransparency="True">
+                <ListBox x:Name="TargetBox"
+                         Width="280"
+                         MaxHeight="240"
+                         Background="{DynamicResource FieldBrush}"
+                         Foreground="{DynamicResource InkBrush}"
+                         BorderBrush="{DynamicResource LineBrush}"
+                         BorderThickness="1"
+                         SelectionChanged="Target_Changed">
+                  <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                      <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+                      <Setter Property="Padding" Value="8,4" />
+                    </Style>
+                  </ListBox.ItemContainerStyle>
+                </ListBox>
+              </Popup>
+              <Button x:Name="ArmTargetButton" Grid.Column="2" Content="Press" MinWidth="76" Click="ArmTarget_Click" AutomationProperties.Name="Press a button or key to choose it" />
+            </Grid>
+            <TextBlock x:Name="ArmHint" Margin="0,6,0,0" FontSize="12" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Visibility="Collapsed" />
+
+            <TextBlock Margin="0,16,0,6" Style="{StaticResource FieldLabel}" Text="Mode" />
+            <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="1">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="1" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <RadioButton x:Name="SpamMode" GroupName="ClickMode" IsChecked="True" Checked="ClickForm_Changed" Style="{StaticResource Segment}">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Margin="0,0,8,0" VerticalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="14" Text="&#xE895;" />
+                    <TextBlock VerticalAlignment="Center" Text="Spam" />
+                  </StackPanel>
+                </RadioButton>
+                <Border Grid.Column="1" Background="{DynamicResource LineBrush}" />
+                <RadioButton x:Name="HoldMode" Grid.Column="2" GroupName="ClickMode" Checked="ClickForm_Changed" Style="{StaticResource Segment}">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Margin="0,0,8,0" VerticalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="14" Text="&#xE718;" />
+                    <TextBlock VerticalAlignment="Center" Text="Hold" />
+                  </StackPanel>
+                </RadioButton>
+              </Grid>
+            </Border>
+
+            <StackPanel x:Name="SpamOptions" Margin="0,16,0,0">
+              <Grid>
+                <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" Text="Interval" />
+                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                  <TextBox x:Name="GapBox" Width="72" Text="100" />
+                  <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" Text="ms" />
+                </StackPanel>
+              </Grid>
+              <Grid Margin="0,10,0,0">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="8" />
+                  <ColumnDefinition Width="72" />
+                </Grid.ColumnDefinitions>
+                <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="1">
+                  <Grid>
                     <Grid.ColumnDefinitions>
                       <ColumnDefinition Width="*" />
-                      <ColumnDefinition Width="12" />
+                      <ColumnDefinition Width="1" />
                       <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <StackPanel>
-                      <TextBlock FontSize="13" Foreground="{DynamicResource MutedBrush}" Text="Clicks" />
-                      <TextBox x:Name="CountBox" Margin="0,4,0,0" Text="1" />
-                    </StackPanel>
-                    <StackPanel Grid.Column="2">
-                      <TextBlock FontSize="13" Foreground="{DynamicResource MutedBrush}" Text="Times" />
-                      <TextBox x:Name="RepeatBox" Margin="0,4,0,0" Text="3" />
-                    </StackPanel>
+                    <RadioButton x:Name="UntilStopBox" GroupName="ClickRepeat" Content="Until stop" IsChecked="True" Checked="ClickForm_Changed" Style="{StaticResource Segment}" />
+                    <Border Grid.Column="1" Background="{DynamicResource LineBrush}" />
+                    <RadioButton x:Name="CountModeBox" Grid.Column="2" GroupName="ClickRepeat" Content="Count" Checked="ClickForm_Changed" Style="{StaticResource Segment}" />
                   </Grid>
-                </StackPanel>
+                </Border>
+                <TextBox x:Name="RepeatBox" Grid.Column="2" Text="10" />
+              </Grid>
+              <StackPanel x:Name="ClickTypeRow" Margin="0,10,0,0">
+                <TextBlock Style="{StaticResource FieldLabel}" Text="Clicks" />
+                <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="1">
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="1" />
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="1" />
+                      <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <RadioButton x:Name="SingleBox" GroupName="ClickType" Content="Single" IsChecked="True" Style="{StaticResource Segment}" />
+                    <Border Grid.Column="1" Background="{DynamicResource LineBrush}" />
+                    <RadioButton x:Name="DoubleBox" Grid.Column="2" GroupName="ClickType" Content="Double" Style="{StaticResource Segment}" />
+                    <Border Grid.Column="3" Background="{DynamicResource LineBrush}" />
+                    <RadioButton x:Name="TripleBox" Grid.Column="4" GroupName="ClickType" Content="Triple" Style="{StaticResource Segment}" />
+                  </Grid>
+                </Border>
+              </StackPanel>
+            </StackPanel>
+
+            <StackPanel x:Name="PlaceRow" Margin="0,16,0,0">
+              <TextBlock Style="{StaticResource FieldLabel}" Text="Where" />
+              <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="1">
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="1" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <RadioButton x:Name="HereBox" GroupName="ClickPlace" IsChecked="True" Checked="ClickForm_Changed" Style="{StaticResource Segment}">
+                    <StackPanel Orientation="Horizontal">
+                      <TextBlock Margin="0,0,8,0" VerticalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="14" Text="&#xE962;" />
+                      <TextBlock VerticalAlignment="Center" Text="Pointer" />
+                    </StackPanel>
+                  </RadioButton>
+                  <Border Grid.Column="1" Background="{DynamicResource LineBrush}" />
+                  <RadioButton x:Name="PointBox" Grid.Column="2" GroupName="ClickPlace" Checked="ClickForm_Changed" Style="{StaticResource Segment}">
+                    <StackPanel Orientation="Horizontal">
+                      <TextBlock Margin="0,0,8,0" VerticalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="14" Text="&#xE707;" />
+                      <TextBlock VerticalAlignment="Center" Text="Point" />
+                    </StackPanel>
+                  </RadioButton>
+                </Grid>
               </Border>
+              <StackPanel x:Name="PointFields" Orientation="Horizontal" Margin="0,8,0,0" Visibility="Collapsed">
+                <Button x:Name="PickPointButton" Content="Pick" MinWidth="52" Margin="0,0,12,0" Click="PickPoint_Click" AutomationProperties.Name="Pick a point by clicking it" />
+                <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" Text="X" />
+                <TextBox x:Name="XBox" Width="72" Margin="8,0,12,0" Text="0" />
+                <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" Text="Y" />
+                <TextBox x:Name="YBox" Width="72" Margin="8,0,0,0" Text="0" />
+              </StackPanel>
+            </StackPanel>
+
+            <Grid Margin="0,16,0,0">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <TextBlock VerticalAlignment="Center" Foreground="{DynamicResource MutedBrush}" Text="Shortcut" />
+              <TextBlock x:Name="HotkeyLabel" Grid.Column="1" Margin="12,0" VerticalAlignment="Center" FontWeight="SemiBold" Text="None" />
+              <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <Button x:Name="ArmHotkeyButton" Content="Set" MinWidth="52" Click="ArmHotkey_Click" AutomationProperties.Name="Set the toggle shortcut" />
+                <Button Margin="6,0,0,0" Content="Clear" MinWidth="52" Click="ClearHotkey_Click" />
+              </StackPanel>
             </Grid>
-            <Border Margin="0,12,0,0" Style="{StaticResource Panel}">
-              <StackPanel>
-                <TextBlock FontWeight="SemiBold" Text="Point" />
-                <TextBlock Margin="0,8,0,0" FontSize="13" Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Text="The click goes to this point on the screen." />
-                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                  <TextBlock VerticalAlignment="Center" Text="X" />
-                  <TextBox x:Name="XBox" Width="96" Margin="8,0,16,0" Text="40" />
-                  <TextBlock VerticalAlignment="Center" Text="Y" />
-                  <TextBox x:Name="YBox" Width="96" Margin="8,0,0,0" Text="40" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
-                  <Button Content="Move pointer" MinHeight="40" Padding="14,8" Click="Move_Click" />
-                  <Button Content="Click once" Margin="8,0,0,0" MinHeight="40" Padding="14,8" Click="Click_Click" />
-                </StackPanel>
-              </StackPanel>
-            </Border>
-            <Button Margin="0,12,0,0"
+
+            <Button Margin="0,18,0,0"
                     Style="{StaticResource AccentButton}"
-                    Content="Start"
                     AutomationProperties.Name="Start clicking"
-                    Click="Repeat_Click" />
-            <Border Margin="0,16,0,0" Style="{StaticResource Panel}">
-              <StackPanel>
-                <TextBlock FontWeight="SemiBold" Text="Hold a key" />
-                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                  <TextBlock VerticalAlignment="Center" Text="Name" />
-                  <TextBox x:Name="KeyBox" Width="120" Margin="8,0,16,0" Text="F13" />
-                  <TextBlock VerticalAlignment="Center" Text="Hold ms" />
-                  <TextBox x:Name="HoldBox" Width="88" Margin="8,0,0,0" Text="500" />
-                </StackPanel>
-                <Button Content="Hold key" Margin="0,12,0,0" MinHeight="40" Padding="14,8" HorizontalAlignment="Left" Click="Hold_Click" />
+                    Click="StartClick_Click">
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <TextBlock Margin="0,1,8,0" VerticalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="12" Text="&#xE768;" />
+                <TextBlock VerticalAlignment="Center" Text="Start" />
               </StackPanel>
-            </Border>
+            </Button>
+            <TextBlock x:Name="ClickStatus" Margin="0,8,0,0" FontSize="12" TextWrapping="Wrap" />
           </StackPanel>
 
           <StackPanel x:Name="RecordPage" Visibility="Collapsed">

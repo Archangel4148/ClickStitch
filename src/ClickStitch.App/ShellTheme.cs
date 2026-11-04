@@ -25,6 +25,7 @@ public static class ShellTheme
                 SystemColors.WindowColor,
                 SystemColors.WindowTextColor,
                 SystemColors.HighlightTextColor);
+            application.Resources["StartBrush"] = new SolidColorBrush(SystemColors.HighlightColor);
             return;
         }
 
@@ -49,8 +50,9 @@ public static class ShellTheme
                 Color(0x0E, 0x13, 0x24),
                 Color(0x3E, 0x46, 0x66),
                 Color(0x1A, 0x10, 0x30));
-            return;
         }
+        else
+        {
 
         Set(
             application,
@@ -64,6 +66,9 @@ public static class ShellTheme
             Color(0xFF, 0xFF, 0xFF),
             Color(0xD5, 0xC8, 0xEA),
             Color(0xFF, 0xFF, 0xFF));
+        }
+
+        Shade(application, dark);
     }
 
     private static bool WindowsAppsUseLightTheme()
@@ -110,6 +115,23 @@ public static class ShellTheme
         application.Resources["FieldBrush"] = new SolidColorBrush(field);
         application.Resources["LineBrush"] = new SolidColorBrush(line);
         application.Resources["AccentTextBrush"] = new SolidColorBrush(accentText);
+        application.Resources[SystemColors.WindowBrushKey] = new SolidColorBrush(field);
+        application.Resources[SystemColors.WindowTextBrushKey] = new SolidColorBrush(ink);
+        application.Resources[SystemColors.ControlBrushKey] = new SolidColorBrush(card);
+        application.Resources[SystemColors.ControlTextBrushKey] = new SolidColorBrush(ink);
+    }
+
+    private static void Shade(Application application, bool dark)
+    {
+        if (dark)
+        {
+            application.Resources["PaperBrush"] = new LinearGradientBrush(Color(0x0B, 0x10, 0x20), Color(0x16, 0x12, 0x2C), 90);
+            application.Resources["StartBrush"] = new LinearGradientBrush(Color(0xED, 0xE9, 0xFE), Color(0xC4, 0xB5, 0xFD), 0);
+            return;
+        }
+
+        application.Resources["PaperBrush"] = new LinearGradientBrush(Color(0xF7, 0xF5, 0xFC), Color(0xE6, 0xDE, 0xF4), 90);
+        application.Resources["StartBrush"] = new LinearGradientBrush(Color(0x5B, 0x21, 0xB6), Color(0x7C, 0x3A, 0xED), 0);
     }
 
     private static Color Color(byte red, byte green, byte blue) => System.Windows.Media.Color.FromRgb(red, green, blue);

@@ -29,6 +29,7 @@ public partial class MainWindow : Window
     private PendingDiscard _pending;
     private string? _pendingPath;
     private string? _libraryPath;
+    private WindowToggleHotkey? _hotkey;
 
     private enum PendingDiscard
     {
@@ -61,6 +62,10 @@ public partial class MainWindow : Window
         }
         BuildPalette();
         FillEditor();
+        FillClickForm();
+        PreviewKeyDown += CaptureKey;
+        PreviewMouseDown += CaptureMouse;
+        TargetPopup.Closed += TargetList_Closed;
         Show("click");
         _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
         _timer.Tick += (_, _) => Refresh();
@@ -84,6 +89,7 @@ public partial class MainWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         _timer.Stop();
+        _hotkey?.Dispose();
         _tryout.Dispose();
         base.OnClosed(e);
     }
@@ -124,6 +130,19 @@ public partial class MainWindow : Window
         IntPtr handle = new WindowInteropHelper(this).Handle;
         int corner = 2;
         _ = DwmSetWindowAttribute(handle, 33, ref corner, sizeof(int));
+        _hotkey = new WindowToggleHotkey(this, ToggleFromHotkey);
+        _hotkey.Attach();
+        if (Application.Current is App app && app.Settings.ToggleHotkey is string saved && saved.Length > 0)
+        {
+            if (_hotkey.TryBind(saved, out string problem))
+            {
+                HotkeyLabel.Text = _hotkey.Bound ?? saved;
+            }
+            else
+            {
+                ClickStatus.Text = problem;
+            }
+        }
     }
 
     private void Appearance_Checked(object sender, RoutedEventArgs e)
@@ -223,13 +242,13 @@ public partial class MainWindow : Window
 
     private static void Mark(Button button, bool selected)
     {
+        Brush ink = Application.Current?.TryFindResource("InkBrush") as Brush ?? Brushes.Black;
+        Brush thread = Application.Current?.TryFindResource("ThreadBrush") as Brush ?? ink;
         button.FontWeight = selected ? FontWeights.SemiBold : FontWeights.Regular;
-        button.Background = selected && Application.Current?.TryFindResource("CardBrush") is Brush card
-            ? card
-            : Brushes.Transparent;
-        button.Foreground = selected && Application.Current?.TryFindResource("ThreadBrush") is Brush thread
-            ? thread
-            : Application.Current?.TryFindResource("InkBrush") as Brush ?? Brushes.Black;
+        button.Background = Brushes.Transparent;
+        button.BorderBrush = selected ? thread : Brushes.Transparent;
+        button.BorderThickness = new Thickness(0, 0, 0, selected ? 2 : 0);
+        button.Foreground = selected ? thread : ink;
     }
 
     private void FillSettings(PluginSettings settings)
@@ -242,54 +261,6 @@ public partial class MainWindow : Window
         PluginTrustBox.IsChecked = settings.ThirdPartyPluginsAcknowledged;
         MacroFolder.Text = "Saved in " + MacroStore.DefaultDirectory() + ".";
         _filling = false;
-    }
-
-    private void Move_Click(object sender, RoutedEventArgs e)
-    {
-        if (TryPoint(out int x, out int y))
-        {
-            _tryout.MoveTo(x, y);
-        }
-    }
-
-    private void Click_Click(object sender, RoutedEventArgs e)
-    {
-        if (TryPoint(out int x, out int y) && TryCount(out int count))
-        {
-            _tryout.ClickAt(x, y, count);
-        }
-    }
-
-    private void Hold_Click(object sender, RoutedEventArgs e)
-    {
-        string key = KeyBox.Text.Trim();
-        if (!MacroKeys.IsKnown(key))
-        {
-            Note($"Key {key} is not one of the format-1 names. F13 is a safe default.");
-            return;
-        }
-
-        if (!TryRange(HoldBox, "Hold", 0, 10_000, out int hold))
-        {
-            return;
-        }
-
-        _tryout.HoldKey(key, hold);
-    }
-
-    private void Repeat_Click(object sender, RoutedEventArgs e)
-    {
-        if (!TryPoint(out int x, out int y) || !TryCount(out int count))
-        {
-            return;
-        }
-
-        if (!TryRange(RepeatBox, "Times", 1, 20, out int repeat) || !TryRange(GapBox, "Gap", 0, 10_000, out int gap))
-        {
-            return;
-        }
-
-        _tryout.RepeatClick(x, y, count, repeat, gap);
     }
 
     private void Record_Click(object sender, RoutedEventArgs e) => _tryout.StartRecording(MovementBox.IsChecked == true);
@@ -372,26 +343,6 @@ public partial class MainWindow : Window
 
         StatusText.Text = _tryout.State;
         ShowRun();
-    }
-
-    private bool TryPoint(out int x, out int y)
-    {
-        y = 0;
-        return TryRange(XBox, "X", -32768, 32767, out x) && TryRange(YBox, "Y", -32768, 32767, out y);
-    }
-
-    private bool TryCount(out int count) => TryRange(CountBox, "Clicks", 1, 3, out count);
-
-    private bool TryRange(TextBox box, string label, int minimum, int maximum, out int value)
-    {
-        if (int.TryParse(box.Text.Trim(), out value) && value >= minimum && value <= maximum)
-        {
-            return true;
-        }
-
-        Note($"{label} must be a whole number from {minimum} through {maximum}.");
-        value = 0;
-        return false;
     }
 
     private void ReleaseAfterPluginFailure()

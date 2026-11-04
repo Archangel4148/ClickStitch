@@ -259,6 +259,10 @@ public sealed class PluginHostTests : IDisposable
         PluginSettings loaded = PluginSettingsStore.Read(path).Settings;
         Assert.Equal(AppAppearance.Dark, loaded.Appearance);
         Assert.True(loaded.ThirdPartyPluginsAcknowledged);
+        Assert.Null(loaded.ToggleHotkey);
+
+        PluginSettingsStore.Write(path, loaded.WithToggleHotkey("Ctrl+F6"));
+        Assert.Equal("Ctrl+F6", PluginSettingsStore.Read(path).Settings.ToggleHotkey);
 
         File.WriteAllText(Path.Combine(_root, "plain.json"), """
             {

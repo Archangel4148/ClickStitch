@@ -78,12 +78,12 @@ Release build and Debug build of `ClickStitch.sln` succeeded with 0 warnings and
 dotnet test ClickStitch.sln -c Release --settings tests.runsettings
 ```
 
-Passed: 251. Failed: 0. Skipped: 0.  
-`ClickStitch.Core.Tests.dll`: 77 passed in 78 ms.  
-`ClickStitch.Input.Tests.dll`: 155 passed in 828 ms.  
-`ClickStitch.Plugins.Sdk.Tests.dll`: 6 passed in 81 ms.  
-`ClickStitch.Plugins.Host.Tests.dll`: 12 passed in 547 ms.  
-`ClickStitch.Performance.Tests.dll`: 1 passed in 92 ms. That test does not submit input. The tryout window is not opened by this run.  
+Passed: 258. Failed: 0. Skipped: 0.  
+`ClickStitch.Core.Tests.dll`: 77 passed in 172 ms.  
+`ClickStitch.Input.Tests.dll`: 162 passed in 876 ms.  
+`ClickStitch.Plugins.Sdk.Tests.dll`: 6 passed in 186 ms.  
+`ClickStitch.Plugins.Host.Tests.dll`: 12 passed in 780 ms.  
+`ClickStitch.Performance.Tests.dll`: 1 passed in 232 ms. That test does not submit input. The tryout window is not opened by this run.  
 Release, 2 November 2026. The default run does not call `SendInput`, does not register a usable global hotkey, and does not install a low-level hook. The host tests load the probe and the sample plugin from a temporary folder. The save/load test uses a temporary folder. The record button is covered with a scripted hook. The library tests use a temporary folder. The playback test uses the capturing stand-in. The plugin manager test discovers a temporary folder and does not load those assemblies.
 
 `make bench` was run the same evening on the Ryzen 7 7800X3D, Windows 11 build 26200.9711, .NET 10.0.14, Release. The product wait is hybrid. The table is in `docs/TESTING.md`.
@@ -132,3 +132,4 @@ None. The foundation targets .NET 10, which is the current long-term support rel
 - Phase 5.2 approved. Phases 5.3 and 5.4 add the library and the run view. Macros are stored in Documents\ClickStitch. Run plays the open macro on the existing worker. A saved click is covered with the capturing stand-in.
 - Phases 5.3 and 5.4 approved. Phase 5.5 adds the plugin manager. It lists installed plugins, version, compatibility, and errors, and it saves enablement for the next start. It does not load a plugin during the session.
 - The shell drops the system title bar. Click is the first page. Macros, Record, Plugins, and Settings are tabs. Colors come from the app icon. No new click behavior was added.
+- Click is one control: a button or key, Hold or Spam, at the pointer or a point, and an optional toggle shortcut. Spam shows the gap. The document is covered without sending input. The shortcut is not registered by the tests.
